@@ -126,6 +126,48 @@ func TestLetter_fail(t *testing.T) {
 	}
 }
 
+func TestAlphaNum(t *testing.T) {
+	for _, c := range "abcXYZ019" {
+		got, err := parsec.Run(parsec.AlphaNum(), string(c))
+		if err != nil {
+			t.Fatalf("AlphaNum(%q): %v", c, err)
+		}
+		if got != c {
+			t.Errorf("AlphaNum(%q) = %q, want %q", c, got, c)
+		}
+	}
+}
+
+func TestAlphaNum_fail(t *testing.T) {
+	for _, c := range "_ !@" {
+		_, err := parsec.Run(parsec.AlphaNum(), string(c))
+		if err == nil {
+			t.Errorf("AlphaNum(%q): expected error", c)
+		}
+	}
+}
+
+func TestHexDigit(t *testing.T) {
+	for _, c := range "0123456789abcdefABCDEF" {
+		got, err := parsec.Run(parsec.HexDigit(), string(c))
+		if err != nil {
+			t.Fatalf("HexDigit(%q): %v", c, err)
+		}
+		if got != c {
+			t.Errorf("HexDigit(%q) = %q, want %q", c, got, c)
+		}
+	}
+}
+
+func TestHexDigit_fail(t *testing.T) {
+	for _, c := range "ghGH_z" {
+		_, err := parsec.Run(parsec.HexDigit(), string(c))
+		if err == nil {
+			t.Errorf("HexDigit(%q): expected error", c)
+		}
+	}
+}
+
 func TestRunFull_success(t *testing.T) {
 	_, err := parsec.RunFull(parsec.Char('a'), "a")
 	if err != nil {

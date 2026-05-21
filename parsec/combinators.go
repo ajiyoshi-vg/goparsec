@@ -1,5 +1,7 @@
 package parsec
 
+import "fmt"
+
 // Many parses zero or more occurrences of p. Always succeeds.
 // Panics if p succeeds without consuming input, which would cause an infinite loop.
 func Many[T any](p Parser[T]) Parser[[]T] {
@@ -242,6 +244,88 @@ func Integer() Parser[int] {
 			return n
 		})
 	})
+}
+
+// NotFollowedBy succeeds if p fails, consuming no input.
+// Useful for ensuring a token is not followed by unexpected characters
+// (e.g., distinguishing keywords from identifiers).
+func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
+	return func(in Input) (struct{}, Input, error) {
+		_, _, err := p(in)
+		if err == nil {
+			c, ok := in.Head()
+			if ok {
+				return struct{}{}, in, newError(in, fmt.Sprintf("unexpected %q", c))
+			}
+			return struct{}{}, in, newError(in, "unexpected input")
+		}
+		return struct{}{}, in, nil
+	}
+}
+
+// Label attaches a description to p, replacing its error message on failure.
+func Label[T any](p Parser[T], label string) Parser[T] {
+	return func(in Input) (T, Input, error) {
+		val, next, err := p(in)
+		if err != nil {
+			return val, in, &ParseError{Pos: in.Pos(), Message: "expected " + label}
+		}
+		return val, next, nil
+	}
+}
+
+// Count parses exactly n occurrences of p, failing if fewer are found.
+func Count[T any](n int, p Parser[T]) Parser[[]T] {
+	return func(in Input) ([]T, Input, error) {
+		results := make([]T, 0, n)
+		cur := in
+		for range n {
+			val, next, err := p(cur)
+			if err != nil {
+				return nil, in, err
+			}
+			results = append(results, val)
+			cur = next
+		}
+		return results, cur, nil
+	}
+}
+
+// ManyTill parses p zero or more times until end succeeds, consuming end.
+func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
+	var rec Parser[[]T]
+	rec = func(in Input) ([]T, Input, error) {
+		if _, next, err := end(in); err == nil {
+			return []T{}, next, nil
+		}
+		val, next, err := p(in)
+		if err != nil {
+			return nil, in, err
+		}
+		rest, next, err := rec(next)
+		if err != nil {
+			return nil, in, err
+		}
+		return append([]T{val}, rest...), next, nil
+	}
+	return rec
+}
+
+// Chainr1 parses one or more occurrences of p separated by op,
+// folding the results right-associatively.
+func Chainr1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
+	var rec Parser[T]
+	rec = func(in Input) (T, Input, error) {
+		return Bind(p, func(x T) Parser[T] {
+			return Option(x, Bind(op, func(f func(T, T) T) Parser[T] {
+				return Map(
+					Parser[T](func(in Input) (T, Input, error) { return rec(in) }),
+					func(y T) T { return f(x, y) },
+				)
+			}))
+		})(in)
+	}
+	return rec
 }
 
 // Natural parses one or more digits as a non-negative integer.

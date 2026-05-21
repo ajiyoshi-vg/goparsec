@@ -73,3 +73,17 @@ func Space() Parser[rune] {
 		return r == ' ' || r == '\t' || r == '\n' || r == '\r'
 	})
 }
+
+// AlphaNum parses an ASCII letter or digit.
+func AlphaNum() Parser[rune] {
+	return Satisfy(func(r rune) bool {
+		return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+	})
+}
+
+// HexDigit parses a hexadecimal digit [0-9a-fA-F].
+func HexDigit() Parser[rune] {
+	return Satisfy(func(r rune) bool {
+		return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+	})
+}

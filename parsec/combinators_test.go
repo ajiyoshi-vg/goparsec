@@ -283,6 +283,133 @@ func TestChainl1_fail(t *testing.T) {
 	}
 }
 
+func intPow(base, exp int) int {
+	result := 1
+	for range exp {
+		result *= base
+	}
+	return result
+}
+
+func TestNotFollowedBy_success(t *testing.T) {
+	// "if" followed by space: OK as keyword
+	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	_, err := parsec.Run(p, "if ")
+	if err != nil {
+		t.Fatalf("expected success: %v", err)
+	}
+}
+
+func TestNotFollowedBy_atEOF(t *testing.T) {
+	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	_, err := parsec.Run(p, "if")
+	if err != nil {
+		t.Fatalf("expected success at EOF: %v", err)
+	}
+}
+
+func TestNotFollowedBy_fail(t *testing.T) {
+	// "ifs" must not match keyword "if"
+	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	_, err := parsec.Run(p, "ifs")
+	if err == nil {
+		t.Error("expected failure: 'ifs' should not match keyword 'if'")
+	}
+}
+
+func TestLabel(t *testing.T) {
+	p := parsec.Label(parsec.Digit(), "digit")
+	_, err := parsec.Run(p, "abc")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *parsec.ParseError, got %T", err)
+	}
+	if pe.Message != "expected digit" {
+		t.Errorf("got message %q, want \"expected digit\"", pe.Message)
+	}
+}
+
+func TestCount(t *testing.T) {
+	got, err := parsec.Run(parsec.Count(3, parsec.Digit()), "123abc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "123" {
+		t.Errorf("got %q, want \"123\"", string(got))
+	}
+}
+
+func TestCount_tooFew(t *testing.T) {
+	_, err := parsec.Run(parsec.Count(4, parsec.Digit()), "123abc")
+	if err == nil {
+		t.Error("expected error: not enough matches")
+	}
+}
+
+func TestManyTill(t *testing.T) {
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	got, err := parsec.Run(p, "hello*/world")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "hello" {
+		t.Errorf("got %q, want \"hello\"", string(got))
+	}
+}
+
+func TestManyTill_empty(t *testing.T) {
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	got, err := parsec.Run(p, "*/rest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 0 {
+		t.Errorf("got %v, want empty slice", got)
+	}
+}
+
+func TestManyTill_noEnd(t *testing.T) {
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	_, err := parsec.Run(p, "hello world")
+	if err == nil {
+		t.Error("expected error when end delimiter not found")
+	}
+}
+
+func TestChainr1_single(t *testing.T) {
+	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
+	got, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 4 {
+		t.Errorf("got %d, want 4", got)
+	}
+}
+
+func TestChainr1_rightAssoc(t *testing.T) {
+	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
+	// 2^3^2 = 2^(3^2) = 2^9 = 512, not (2^3)^2 = 64
+	got, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "2^3^2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 512 {
+		t.Errorf("got %d, want 512 (right-assoc: 2^(3^2))", got)
+	}
+}
+
+func TestChainr1_fail(t *testing.T) {
+	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
+	_, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "abc")
+	if err == nil {
+		t.Error("expected error when p doesn't match")
+	}
+}
+
 func TestInteger(t *testing.T) {
 	tests := []struct {
 		input string
