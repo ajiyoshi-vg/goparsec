@@ -136,22 +136,7 @@ func Skip[T, U any](pa Parser[T], pb Parser[U]) Parser[T] {
 
 // Between parses open, then p, then close, returning p's result.
 func Between[O, C, T any](open Parser[O], close Parser[C], p Parser[T]) Parser[T] {
-	return func(in Input) (T, Input, error) {
-		var zero T
-		_, next, err := open(in)
-		if err != nil {
-			return zero, in, err
-		}
-		val, next, err := p(next)
-		if err != nil {
-			return zero, in, err
-		}
-		_, next, err = close(next)
-		if err != nil {
-			return zero, in, err
-		}
-		return val, next, nil
-	}
+	return Then(open, Skip(p, close))
 }
 
 // SepBy parses zero or more occurrences of p separated by sep.
@@ -301,22 +286,21 @@ func Count[T any](n int, p Parser[T]) Parser[[]T] {
 
 // ManyTill parses p zero or more times until end succeeds, consuming end.
 func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
-	var rec Parser[[]T]
-	rec = func(in Input) ([]T, Input, error) {
-		if _, next, err := end(in); err == nil {
-			return []T{}, next, nil
+	return func(in Input) ([]T, Input, error) {
+		var results []T
+		cur := in
+		for {
+			if _, next, err := end(cur); err == nil {
+				return results, next, nil
+			}
+			val, next, err := p(cur)
+			if err != nil {
+				return nil, in, err
+			}
+			results = append(results, val)
+			cur = next
 		}
-		val, next, err := p(in)
-		if err != nil {
-			return nil, in, err
-		}
-		rest, next, err := rec(next)
-		if err != nil {
-			return nil, in, err
-		}
-		return append([]T{val}, rest...), next, nil
 	}
-	return rec
 }
 
 // Chainr1 parses one or more occurrences of p separated by op,
@@ -326,10 +310,7 @@ func Chainr1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 	rec = func(in Input) (T, Input, error) {
 		return Bind(p, func(x T) Parser[T] {
 			return Option(x, Bind(op, func(f func(T, T) T) Parser[T] {
-				return Map(
-					Parser[T](func(in Input) (T, Input, error) { return rec(in) }),
-					func(y T) T { return f(x, y) },
-				)
+				return Map(rec, func(y T) T { return f(x, y) })
 			}))
 		})(in)
 	}
