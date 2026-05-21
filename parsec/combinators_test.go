@@ -127,18 +127,16 @@ func TestMap(t *testing.T) {
 }
 
 func TestBind(t *testing.T) {
-	// Parse 'a' then based on that parse 'b'
-	p := parsec.Bind(parsec.Char('a'), func(r rune) parsec.Parser[string] {
-		return parsec.Map(parsec.Char('b'), func(r2 rune) string {
-			return string([]rune{r, r2})
-		})
+	// Parse N, then Count(N, 'a') — the continuation depends on the parsed value
+	p := parsec.Bind(parsec.Natural(), func(n int) parsec.Parser[[]rune] {
+		return parsec.Count(n, parsec.Char('a'))
 	})
-	got, err := parsec.Run(p, "ab")
+	got, err := parsec.Run(p, "3aaa")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "ab" {
-		t.Errorf("got %q, want \"ab\"", got)
+	if string(got) != "aaa" {
+		t.Errorf("got %q, want \"aaa\"", string(got))
 	}
 }
 
@@ -180,6 +178,9 @@ func TestSepBy_zero(t *testing.T) {
 	got, err := parsec.Run(p, "abc")
 	if err != nil {
 		t.Fatal(err)
+	}
+	if got == nil {
+		t.Error("SepBy: expected non-nil empty slice, got nil")
 	}
 	if len(got) != 0 {
 		t.Errorf("got %v, want empty", got)
@@ -246,7 +247,7 @@ func TestChoice_furthestError(t *testing.T) {
 }
 
 func TestChainl1_single(t *testing.T) {
-	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
 	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1")
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +258,7 @@ func TestChainl1_single(t *testing.T) {
 }
 
 func TestChainl1_multiple(t *testing.T) {
-	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
 	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1+2+3")
 	if err != nil {
 		t.Fatal(err)
@@ -268,7 +269,7 @@ func TestChainl1_multiple(t *testing.T) {
 }
 
 func TestChainl1_leftAssoc(t *testing.T) {
-	divOp := parsec.Map(parsec.Char('/'), func(rune) func(int, int) int { return func(a, b int) int { return a / b } })
+	divOp := parsec.Map(parsec.Char('/'), func(rune) func(int, int) int { return div })
 	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), divOp), "12/3/2")
 	if err != nil {
 		t.Fatal(err)
@@ -279,7 +280,7 @@ func TestChainl1_leftAssoc(t *testing.T) {
 }
 
 func TestChainl1_fail(t *testing.T) {
-	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
 	_, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "abc")
 	if err == nil {
 		t.Error("expected error when p doesn't match")
