@@ -47,7 +47,7 @@ func newJSONParser() parsec.Parser[any] {
 	jtrue   := keyword("true",  jsonTrue)
 	jfalse  := keyword("false", jsonFalse)
 	jnumber := parsec.Then(w, parsec.Map(parsec.Float(), func(f float64) any { return f }))
-	jstring := parsec.Then(w, parsec.Map(parsec.GoString(), jsonString))
+	jstring := parsec.Then(w, parsec.Map(parsec.JSONString(), jsonString))
 
 	comma := tok(',')
 	colon := tok(':')
@@ -59,7 +59,7 @@ func newJSONParser() parsec.Parser[any] {
 	)
 
 	// object: '{' ws (key ':' value (',' key ':' value)*)? ws '}'
-	key  := parsec.Then(w, parsec.GoString())
+	key  := parsec.Then(w, parsec.JSONString())
 	pair := parsec.Bind(key, func(k string) parsec.Parser[[2]any] {
 		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
 	})
