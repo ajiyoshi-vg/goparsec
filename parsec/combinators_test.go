@@ -334,6 +334,10 @@ func TestLabel(t *testing.T) {
 	if pe.Message != "expected digit" {
 		t.Errorf("got message %q, want \"expected digit\"", pe.Message)
 	}
+	// Line/Col must be set (not zero)
+	if pe.Line == 0 || pe.Col == 0 {
+		t.Errorf("Label: Line=%d Col=%d, want non-zero", pe.Line, pe.Col)
+	}
 }
 
 func TestCount(t *testing.T) {
@@ -370,8 +374,27 @@ func TestManyTill_empty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got == nil {
+		t.Error("ManyTill: expected non-nil empty slice, got nil")
+	}
 	if len(got) != 0 {
 		t.Errorf("got %v, want empty slice", got)
+	}
+}
+
+func TestManyTill_nonConsuming_panics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic: ManyTill with non-consuming body causes infinite loop")
+		}
+	}()
+	parsec.Run(parsec.ManyTill(parsec.Return('x'), parsec.String("*/")), "hello*/")
+}
+
+func TestChoice_noArgs_fails(t *testing.T) {
+	_, err := parsec.Run(parsec.Choice[rune](), "a")
+	if err == nil {
+		t.Error("Choice with no parsers should fail, not succeed with zero value")
 	}
 }
 

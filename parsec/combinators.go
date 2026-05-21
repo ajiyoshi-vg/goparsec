@@ -40,9 +40,13 @@ func Many1[T any](p Parser[T]) Parser[[]T] {
 // Choice tries each parser in order, returning the first success.
 // On failure, no input is consumed (all parsers implicitly backtrack).
 // Reports the error from whichever parser reached the furthest position.
+// Fails immediately if called with no parsers.
 func Choice[T any](ps ...Parser[T]) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		var zero T
+		if len(ps) == 0 {
+			return zero, in, newError(in, "Choice: no alternatives")
+		}
 		var bestErr error
 		for _, p := range ps {
 			val, next, err := p(in)
@@ -263,7 +267,7 @@ func Label[T any](p Parser[T], label string) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		val, next, err := p(in)
 		if err != nil {
-			return val, in, &ParseError{Pos: in.Pos(), Message: "expected " + label}
+			return val, in, newError(in, "expected "+label)
 		}
 		return val, next, nil
 	}
@@ -287,9 +291,10 @@ func Count[T any](n int, p Parser[T]) Parser[[]T] {
 }
 
 // ManyTill parses p zero or more times until end succeeds, consuming end.
+// Panics if p succeeds without consuming input, which would cause an infinite loop.
 func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
 	return func(in Input) ([]T, Input, error) {
-		var results []T
+		results := []T{}
 		cur := in
 		for {
 			if _, next, err := end(cur); err == nil {
@@ -298,6 +303,9 @@ func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
 			val, next, err := p(cur)
 			if err != nil {
 				return nil, in, err
+			}
+			if next.Pos() == cur.Pos() {
+				panic("parsec: ManyTill: parser succeeded without consuming input")
 			}
 			results = append(results, val)
 			cur = next
