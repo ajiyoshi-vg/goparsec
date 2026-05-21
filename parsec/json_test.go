@@ -11,7 +11,6 @@ package parsec_test
 
 import (
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/ajiyoshi-vg/goparsec/parsec"
@@ -21,10 +20,6 @@ import (
 func jsonNull(_ string) any  { return nil }
 func jsonTrue(_ string) any  { return true }
 func jsonFalse(_ string) any { return false }
-func jsonFloat(s string) any {
-	f, _ := strconv.ParseFloat(s, 64)
-	return f
-}
 func jsonString(s string) any { return s }
 func jsonArray(vs []any) any  { return vs }
 func jsonObject(pairs [][2]any) any {
@@ -44,8 +39,6 @@ func tok(w parsec.Parser[string], c rune) parsec.Parser[rune] {
 	return parsec.Then(w, parsec.Char(c))
 }
 
-func runesToStr(rs []rune) string { return string(rs) }
-
 func newJSONParser() parsec.Parser[any] {
 	var jsonValue parsec.Parser[any]
 	lazy := parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) })
@@ -56,26 +49,7 @@ func newJSONParser() parsec.Parser[any] {
 	jtrue  := keyword(w, "true",  jsonTrue)
 	jfalse := keyword(w, "false", jsonFalse)
 
-	// number: -? digit+ ('.' digit+)?
-	neg    := parsec.Option(false, parsec.Map(parsec.Char('-'), func(rune) bool { return true }))
-	digits := parsec.Map(parsec.Many1(parsec.Digit()), runesToStr)
-	frac   := parsec.Option("", parsec.Map(
-		parsec.Bind(parsec.Char('.'), func(rune) parsec.Parser[[]rune] { return parsec.Many1(parsec.Digit()) }),
-		func(ds []rune) string { return "." + runesToStr(ds) },
-	))
-	jnumber := parsec.Then(w, parsec.Map(
-		parsec.Bind(neg, func(isNeg bool) parsec.Parser[string] {
-			return parsec.Bind(digits, func(i string) parsec.Parser[string] {
-				return parsec.Map(frac, func(f string) string {
-					if isNeg {
-						return "-" + i + f
-					}
-					return i + f
-				})
-			})
-		}),
-		jsonFloat,
-	))
+	jnumber := parsec.Then(w, parsec.Map(parsec.Float(), func(f float64) any { return f }))
 
 	jstring := parsec.Then(w, parsec.Map(parsec.GoString(), jsonString))
 

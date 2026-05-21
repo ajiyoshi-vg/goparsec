@@ -458,3 +458,36 @@ func TestNatural(t *testing.T) {
 		}
 	}
 }
+
+func TestFloat(t *testing.T) {
+	tests := []struct {
+		input string
+		want  float64
+	}{
+		{"0", 0},
+		{"42", 42},
+		{"-7", -7},
+		{"3.14", 3.14},
+		{"-2.5", -2.5},
+		{"1e10", 1e10},
+		{"1.5e-3", 1.5e-3},
+		{"2.0E+4", 2.0e4},
+		{"-1.23e5", -1.23e5},
+	}
+	for _, tt := range tests {
+		got, err := parsec.Run(parsec.Float(), tt.input)
+		if err != nil {
+			t.Fatalf("Float(%q): %v", tt.input, err)
+		}
+		if got != tt.want {
+			t.Errorf("Float(%q) = %v, want %v", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestFloat_fail(t *testing.T) {
+	_, err := parsec.Run(parsec.Float(), "abc")
+	if err == nil {
+		t.Error("expected error for non-float input")
+	}
+}

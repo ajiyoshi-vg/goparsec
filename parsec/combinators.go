@@ -1,6 +1,9 @@
 package parsec
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // Many parses zero or more occurrences of p. Always succeeds.
 // Panics if p succeeds without consuming input, which would cause an infinite loop.
@@ -243,6 +246,40 @@ func Integer() Parser[int] {
 			}
 			return n
 		})
+	})
+}
+
+// Float parses an optional '-', one or more digits, an optional fractional part
+// ('.' digits), and an optional exponent ([eE][+-]? digits), returning float64.
+func Float() Parser[float64] {
+	sign := Option("", Map(Char('-'), func(rune) string { return "-" }))
+	digits := Map(Many1(Digit()), func(rs []rune) string { return string(rs) })
+	frac := Option("", Map(
+		Bind(Char('.'), func(rune) Parser[[]rune] { return Many1(Digit()) }),
+		func(ds []rune) string { return "." + string(ds) },
+	))
+	expSign := Option("", Choice(
+		Map(Char('+'), func(rune) string { return "+" }),
+		Map(Char('-'), func(rune) string { return "-" }),
+	))
+	exp := Option("", Bind(
+		Satisfy(func(r rune) bool { return r == 'e' || r == 'E' }),
+		func(e rune) Parser[string] {
+			return Bind(expSign, func(s string) Parser[string] {
+				return Map(digits, func(d string) string { return string(e) + s + d })
+			})
+		},
+	))
+	floatStr := Bind(sign, func(s string) Parser[string] {
+		return Bind(digits, func(d string) Parser[string] {
+			return Bind(frac, func(f string) Parser[string] {
+				return Map(exp, func(e string) string { return s + d + f + e })
+			})
+		})
+	})
+	return Map(floatStr, func(s string) float64 {
+		f, _ := strconv.ParseFloat(s, 64)
+		return f
 	})
 }
 
