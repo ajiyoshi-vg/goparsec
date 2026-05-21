@@ -224,8 +224,8 @@ func TestMany_nonConsuming_panics(t *testing.T) {
 			t.Error("expected panic: Many with non-consuming parser causes infinite loop")
 		}
 	}()
-	// Option always succeeds without consuming on mismatch
-	parsec.Run(parsec.Many(parsec.Option('x', parsec.Char('a'))), "bbb")
+	// Return always succeeds without consuming input — the clearest trigger for this panic
+	parsec.Run(parsec.Many(parsec.Return('x')), "bbb")
 }
 
 func TestChoice_furthestError(t *testing.T) {
