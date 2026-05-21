@@ -186,14 +186,6 @@ func TestSepBy_multiple(t *testing.T) {
 	}
 }
 
-func TestSepBy1_fail(t *testing.T) {
-	p := parsec.SepBy1(parsec.Digit(), parsec.Char(','))
-	_, err := parsec.Run(p, "abc")
-	if err == nil {
-		t.Error("expected error on empty match")
-	}
-}
-
 func TestSpaces(t *testing.T) {
 	got, err := parsec.Run(parsec.Spaces(), "   hello")
 	if err != nil {

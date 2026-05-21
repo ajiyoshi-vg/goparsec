@@ -71,12 +71,6 @@ func furthestError(a, b error) error {
 	return a
 }
 
-// Try runs p with backtracking. In this implementation all parsers already
-// backtrack on failure, so Try is an identity provided for API compatibility.
-func Try[T any](p Parser[T]) Parser[T] {
-	return p
-}
-
 // Option returns def if p fails, without consuming input.
 func Option[T any](def T, p Parser[T]) Parser[T] {
 	return func(in Input) (T, Input, error) {
@@ -166,29 +160,6 @@ func SepBy[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
 		val, cur, err := p(in)
 		if err != nil {
 			return []T{}, in, nil
-		}
-		results := []T{val}
-		for {
-			_, next, err := sep(cur)
-			if err != nil {
-				return results, cur, nil
-			}
-			val, next, err = p(next)
-			if err != nil {
-				return results, cur, nil
-			}
-			results = append(results, val)
-			cur = next
-		}
-	}
-}
-
-// SepBy1 parses one or more occurrences of p separated by sep.
-func SepBy1[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
-		val, cur, err := p(in)
-		if err != nil {
-			return nil, in, err
 		}
 		results := []T{val}
 		for {
