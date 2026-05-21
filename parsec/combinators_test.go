@@ -218,17 +218,6 @@ func TestSpaces(t *testing.T) {
 	}
 }
 
-func TestLexeme(t *testing.T) {
-	p := parsec.Lexeme(parsec.Digit())
-	got, err := parsec.Run(p, "3   next")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != '3' {
-		t.Errorf("got %q, want '3'", got)
-	}
-}
-
 func TestMany_nonConsuming_panics(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

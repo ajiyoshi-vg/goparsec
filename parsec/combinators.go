@@ -174,11 +174,6 @@ func Spaces() Parser[string] {
 	return Map(Many(Space()), func(rs []rune) string { return string(rs) })
 }
 
-// Lexeme runs p then skips trailing whitespace.
-func Lexeme[T any](p Parser[T]) Parser[T] {
-	return Skip(p, Spaces())
-}
-
 // Chainl1 parses one or more occurrences of p separated by op,
 // folding the results left-associatively.
 func Chainl1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
