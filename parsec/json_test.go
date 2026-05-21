@@ -1,5 +1,14 @@
 package parsec_test
 
+// Integration test: JSON parser
+//
+// Grammar:
+//   value  = null | true | false | number | string | array | object
+//   number = '-'? digit+ ('.' digit+)?
+//   string = '"' [^"\\]* '"'
+//   array  = '[' (value (',' value)*)? ']'
+//   object = '{' (key ':' value (',' key ':' value)*)? '}'
+
 import (
 	"reflect"
 	"strconv"
@@ -8,95 +17,91 @@ import (
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
-// newJSONParser builds a JSON value parser using goparsec combinators.
-// Returns any: nil | bool | float64 | string | []any | map[string]any
-// String values do not support escape sequences.
+// Conversion functions: parsed text → Go values
+func jsonNull(_ string) any  { return nil }
+func jsonTrue(_ string) any  { return true }
+func jsonFalse(_ string) any { return false }
+func jsonFloat(s string) any {
+	f, _ := strconv.ParseFloat(s, 64)
+	return f
+}
+func jsonString(s string) any { return s }
+func jsonArray(vs []any) any  { return vs }
+func jsonObject(pairs [][2]any) any {
+	m := make(map[string]any, len(pairs))
+	for _, p := range pairs {
+		m[p[0].(string)] = p[1]
+	}
+	return m
+}
+
+// Helper builders
+func keyword(w parsec.Parser[string], s string, f func(string) any) parsec.Parser[any] {
+	return parsec.Then(w, parsec.Map(parsec.String(s), f))
+}
+
+func tok(w parsec.Parser[string], c rune) parsec.Parser[rune] {
+	return parsec.Then(w, parsec.Char(c))
+}
+
+func runesToStr(rs []rune) string { return string(rs) }
+
 func newJSONParser() parsec.Parser[any] {
 	var jsonValue parsec.Parser[any]
+	lazy := parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) })
 
 	w := parsec.Spaces()
 
-	jnull  := parsec.Then(w, parsec.Map(parsec.String("null"),  func(string) any { return nil }))
-	jtrue  := parsec.Then(w, parsec.Map(parsec.String("true"),  func(string) any { return true }))
-	jfalse := parsec.Then(w, parsec.Map(parsec.String("false"), func(string) any { return false }))
+	jnull  := keyword(w, "null",  jsonNull)
+	jtrue  := keyword(w, "true",  jsonTrue)
+	jfalse := keyword(w, "false", jsonFalse)
 
-	// number: -? digit+ (. digit+)?
-	frac := parsec.Option("", parsec.Map(
+	// number: -? digit+ ('.' digit+)?
+	neg    := parsec.Option(false, parsec.Map(parsec.Char('-'), func(rune) bool { return true }))
+	digits := parsec.Map(parsec.Many1(parsec.Digit()), runesToStr)
+	frac   := parsec.Option("", parsec.Map(
 		parsec.Bind(parsec.Char('.'), func(rune) parsec.Parser[[]rune] { return parsec.Many1(parsec.Digit()) }),
-		func(ds []rune) string { return "." + string(ds) },
+		func(ds []rune) string { return "." + runesToStr(ds) },
 	))
 	jnumber := parsec.Then(w, parsec.Map(
-		parsec.Bind(
-			parsec.Option(false, parsec.Map(parsec.Char('-'), func(rune) bool { return true })),
-			func(neg bool) parsec.Parser[string] {
-				return parsec.Bind(
-					parsec.Map(parsec.Many1(parsec.Digit()), func(ds []rune) string { return string(ds) }),
-					func(i string) parsec.Parser[string] {
-						return parsec.Map(frac, func(f string) string {
-							s := i + f
-							if neg {
-								s = "-" + s
-							}
-							return s
-						})
-					},
-				)
-			},
-		),
-		func(s string) any {
-			f, _ := strconv.ParseFloat(s, 64)
-			return f
-		},
+		parsec.Bind(neg, func(isNeg bool) parsec.Parser[string] {
+			return parsec.Bind(digits, func(i string) parsec.Parser[string] {
+				return parsec.Map(frac, func(f string) string {
+					if isNeg {
+						return "-" + i + f
+					}
+					return i + f
+				})
+			})
+		}),
+		jsonFloat,
 	))
 
 	// string (no escape sequences)
 	rawString := parsec.Between(
 		parsec.Char('"'),
 		parsec.Char('"'),
-		parsec.Map(
-			parsec.Many(parsec.Satisfy(func(r rune) bool { return r != '"' && r != '\\' })),
-			func(rs []rune) string { return string(rs) },
-		),
+		parsec.Map(parsec.Many(parsec.Satisfy(func(r rune) bool { return r != '"' && r != '\\' })), runesToStr),
 	)
-	jstring := parsec.Then(w, parsec.Map(rawString, func(s string) any { return s }))
+	jstring := parsec.Then(w, parsec.Map(rawString, jsonString))
 
-	comma := parsec.Then(w, parsec.Char(','))
-	colon := parsec.Then(w, parsec.Char(':'))
+	comma := tok(w, ',')
+	colon := tok(w, ':')
 
 	// array: '[' ws (value (',' value)*)? ws ']'
 	jarray := parsec.Map(
-		parsec.Between(
-			parsec.Then(w, parsec.Char('[')),
-			parsec.Then(w, parsec.Char(']')),
-			parsec.SepBy(
-				parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) }),
-				comma,
-			),
-		),
-		func(vs []any) any { return vs },
+		parsec.Between(tok(w, '['), tok(w, ']'), parsec.SepBy(lazy, comma)),
+		jsonArray,
 	)
 
 	// object: '{' ws (key ':' value (',' key ':' value)*)? ws '}'
 	key  := parsec.Then(w, rawString)
 	pair := parsec.Bind(key, func(k string) parsec.Parser[[2]any] {
-		return parsec.Map(
-			parsec.Then(colon, parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) })),
-			func(v any) [2]any { return [2]any{k, v} },
-		)
+		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
 	})
 	jobject := parsec.Map(
-		parsec.Between(
-			parsec.Then(w, parsec.Char('{')),
-			parsec.Then(w, parsec.Char('}')),
-			parsec.SepBy(pair, comma),
-		),
-		func(pairs [][2]any) any {
-			m := make(map[string]any, len(pairs))
-			for _, p := range pairs {
-				m[p[0].(string)] = p[1]
-			}
-			return m
-		},
+		parsec.Between(tok(w, '{'), tok(w, '}'), parsec.SepBy(pair, comma)),
+		jsonObject,
 	)
 
 	jsonValue = parsec.Choice(jnull, jtrue, jfalse, jnumber, jstring, jarray, jobject)
