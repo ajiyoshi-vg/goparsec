@@ -17,9 +17,9 @@ import (
 )
 
 // Conversion functions: parsed text → Go values
-func jsonNull(_ string) any  { return nil }
-func jsonTrue(_ string) any  { return true }
-func jsonFalse(_ string) any { return false }
+func jsonNull(_ string) any   { return nil }
+func jsonTrue(_ string) any   { return true }
+func jsonFalse(_ string) any  { return false }
 func jsonString(s string) any { return s }
 func jsonArray(vs []any) any  { return vs }
 func jsonObject(pairs [][2]any) any {
@@ -30,35 +30,31 @@ func jsonObject(pairs [][2]any) any {
 	return m
 }
 
-// Helper builders
-func keyword(w parsec.Parser[string], s string, f func(string) any) parsec.Parser[any] {
-	return parsec.Then(w, parsec.Map(parsec.String(s), f))
-}
-
-func tok(w parsec.Parser[string], c rune) parsec.Parser[rune] {
-	return parsec.Then(w, parsec.Char(c))
-}
-
 func newJSONParser() parsec.Parser[any] {
 	var jsonValue parsec.Parser[any]
 	lazy := parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) })
 
 	w := parsec.Spaces()
+	// keyword and tok close over w — no need to pass it at each call site
+	keyword := func(s string, f func(string) any) parsec.Parser[any] {
+		return parsec.Then(w, parsec.Map(parsec.String(s), f))
+	}
+	tok := func(c rune) parsec.Parser[rune] {
+		return parsec.Then(w, parsec.Char(c))
+	}
 
-	jnull  := keyword(w, "null",  jsonNull)
-	jtrue  := keyword(w, "true",  jsonTrue)
-	jfalse := keyword(w, "false", jsonFalse)
-
+	jnull   := keyword("null",  jsonNull)
+	jtrue   := keyword("true",  jsonTrue)
+	jfalse  := keyword("false", jsonFalse)
 	jnumber := parsec.Then(w, parsec.Map(parsec.Float(), func(f float64) any { return f }))
-
 	jstring := parsec.Then(w, parsec.Map(parsec.GoString(), jsonString))
 
-	comma := tok(w, ',')
-	colon := tok(w, ':')
+	comma := tok(',')
+	colon := tok(':')
 
 	// array: '[' ws (value (',' value)*)? ws ']'
 	jarray := parsec.Map(
-		parsec.Between(tok(w, '['), tok(w, ']'), parsec.SepBy(lazy, comma)),
+		parsec.Between(tok('['), tok(']'), parsec.SepBy(lazy, comma)),
 		jsonArray,
 	)
 
@@ -68,7 +64,7 @@ func newJSONParser() parsec.Parser[any] {
 		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
 	})
 	jobject := parsec.Map(
-		parsec.Between(tok(w, '{'), tok(w, '}'), parsec.SepBy(pair, comma)),
+		parsec.Between(tok('{'), tok('}'), parsec.SepBy(pair, comma)),
 		jsonObject,
 	)
 
