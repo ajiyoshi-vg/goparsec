@@ -1,7 +1,7 @@
 package parsec
 
 // Many parses zero or more occurrences of p. Always succeeds.
-// p must consume input on success to avoid an infinite loop.
+// Panics if p succeeds without consuming input, which would cause an infinite loop.
 func Many[T any](p Parser[T]) Parser[[]T] {
 	return func(in Input) ([]T, Input, error) {
 		var results []T
@@ -10,6 +10,9 @@ func Many[T any](p Parser[T]) Parser[[]T] {
 			val, next, err := p(cur)
 			if err != nil {
 				return results, cur, nil
+			}
+			if next.Pos() == cur.Pos() {
+				panic("parsec: Many: parser succeeded without consuming input")
 			}
 			results = append(results, val)
 			cur = next
@@ -31,19 +34,36 @@ func Many1[T any](p Parser[T]) Parser[[]T] {
 
 // Choice tries each parser in order, returning the first success.
 // On failure, no input is consumed (all parsers implicitly backtrack).
+// Reports the error from whichever parser reached the furthest position.
 func Choice[T any](ps ...Parser[T]) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		var zero T
-		var lastErr error
+		var bestErr error
 		for _, p := range ps {
 			val, next, err := p(in)
 			if err == nil {
 				return val, next, nil
 			}
-			lastErr = err
+			bestErr = furthestError(bestErr, err)
 		}
-		return zero, in, lastErr
+		return zero, in, bestErr
 	}
+}
+
+// furthestError returns whichever error occurred at the greater input position.
+func furthestError(a, b error) error {
+	if a == nil {
+		return b
+	}
+	pa, ok1 := a.(*ParseError)
+	pb, ok2 := b.(*ParseError)
+	if !ok1 || !ok2 {
+		return b
+	}
+	if pb.Pos >= pa.Pos {
+		return b
+	}
+	return a
 }
 
 // Try runs p with backtracking. In this implementation all parsers already

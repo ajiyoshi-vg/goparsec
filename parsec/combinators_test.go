@@ -215,6 +215,33 @@ func TestLexeme(t *testing.T) {
 	}
 }
 
+func TestMany_nonConsuming_panics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic: Many with non-consuming parser causes infinite loop")
+		}
+	}()
+	// Option always succeeds without consuming on mismatch
+	parsec.Run(parsec.Many(parsec.Option('x', parsec.Char('a'))), "bbb")
+}
+
+func TestChoice_furthestError(t *testing.T) {
+	// "test" reaches pos 3, "true" reaches pos 1 on "tesar"
+	// should report the furthest position regardless of parser order
+	p := parsec.Choice(parsec.String("test"), parsec.String("true"))
+	_, err := parsec.Run(p, "tesar")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *parsec.ParseError, got %T", err)
+	}
+	if pe.Pos != 3 {
+		t.Errorf("want error at pos 3 (furthest reached), got pos %d", pe.Pos)
+	}
+}
+
 func TestChainl1_single(t *testing.T) {
 	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
 	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1")
