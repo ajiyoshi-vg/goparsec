@@ -77,13 +77,7 @@ func newJSONParser() parsec.Parser[any] {
 		jsonFloat,
 	))
 
-	// string (no escape sequences)
-	rawString := parsec.Between(
-		parsec.Char('"'),
-		parsec.Char('"'),
-		parsec.Map(parsec.Many(parsec.Satisfy(func(r rune) bool { return r != '"' && r != '\\' })), runesToStr),
-	)
-	jstring := parsec.Then(w, parsec.Map(rawString, jsonString))
+	jstring := parsec.Then(w, parsec.Map(parsec.GoString(), jsonString))
 
 	comma := tok(w, ',')
 	colon := tok(w, ':')
@@ -95,7 +89,7 @@ func newJSONParser() parsec.Parser[any] {
 	)
 
 	// object: '{' ws (key ':' value (',' key ':' value)*)? ws '}'
-	key  := parsec.Then(w, rawString)
+	key  := parsec.Then(w, parsec.GoString())
 	pair := parsec.Bind(key, func(k string) parsec.Parser[[2]any] {
 		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
 	})
@@ -128,6 +122,8 @@ func TestJSON(t *testing.T) {
 		// strings
 		{`""`, ""},
 		{`"hello"`, "hello"},
+		{`"say \"hi\""`, `say "hi"`},
+		{`"line1\nline2"`, "line1\nline2"},
 		// arrays
 		{`[]`, []any{}},
 		{`[1,2,3]`, []any{float64(1), float64(2), float64(3)}},
