@@ -5,7 +5,7 @@ package parsec_test
 // Grammar (all operators left-associative):
 //   expr   = chainl1(term,   addOp)
 //   term   = chainl1(factor, mulOp)
-//   factor = '(' expr ')' | natural
+//   factor = '(' expr ')' | integer
 
 import (
 	"testing"
@@ -33,7 +33,7 @@ func buildExprParser() parsec.Parser[int] {
 				return expr(in)
 			}),
 		)
-		return parsec.Choice(parsec.Lexeme(parsec.Natural()), paren)(in)
+		return parsec.Choice(parsec.Lexeme(parsec.Integer()), paren)(in)
 	}
 
 	mulOp := parsec.Choice(opParser('*', mul), opParser('/', div))
@@ -64,6 +64,12 @@ func TestExpr(t *testing.T) {
 		{"2 * (3 + 4)", 14},
 		{"12 / 3 / 2", 2},  // 左結合: (12/3)/2 = 2
 		{"10 - 3 - 2", 5},  // 左結合: (10-3)-2 = 5
+		// 負数リテラル
+		{"-1", -1},
+		{"-2 + 3", 1},
+		{"2 * -3", -6},
+		{"1 - -2", 3},
+		{"(-4 + 1) * -2", 6},
 	}
 
 	for _, tt := range tests {

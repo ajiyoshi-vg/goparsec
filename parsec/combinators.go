@@ -231,6 +231,19 @@ func Chainl1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 	})
 }
 
+// Integer parses an optional '-' followed by one or more digits.
+func Integer() Parser[int] {
+	neg := Option(false, Map(Char('-'), func(rune) bool { return true }))
+	return Bind(neg, func(isNeg bool) Parser[int] {
+		return Map(Natural(), func(n int) int {
+			if isNeg {
+				return -n
+			}
+			return n
+		})
+	})
+}
+
 // Natural parses one or more digits as a non-negative integer.
 func Natural() Parser[int] {
 	return Map(Many1(Digit()), func(digits []rune) int {

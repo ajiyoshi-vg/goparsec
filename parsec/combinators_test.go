@@ -283,6 +283,35 @@ func TestChainl1_fail(t *testing.T) {
 	}
 }
 
+func TestInteger(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int
+	}{
+		{"0", 0},
+		{"42", 42},
+		{"-7", -7},
+		{"-0", 0},
+		{"123abc", 123},
+	}
+	for _, tt := range tests {
+		got, err := parsec.Run(parsec.Integer(), tt.input)
+		if err != nil {
+			t.Fatalf("Integer(%q): %v", tt.input, err)
+		}
+		if got != tt.want {
+			t.Errorf("Integer(%q) = %d, want %d", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestInteger_fail(t *testing.T) {
+	_, err := parsec.Run(parsec.Integer(), "abc")
+	if err == nil {
+		t.Error("expected error for non-integer input")
+	}
+}
+
 func TestNatural(t *testing.T) {
 	tests := []struct {
 		input string
