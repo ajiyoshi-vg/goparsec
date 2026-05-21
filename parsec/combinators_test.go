@@ -11,6 +11,9 @@ func TestMany_zero(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got == nil {
+		t.Error("Many: expected non-nil empty slice, got nil")
+	}
 	if len(got) != 0 {
 		t.Errorf("got %v, want empty slice", got)
 	}
@@ -90,6 +93,25 @@ func TestOption_absent(t *testing.T) {
 	}
 	if got != '_' {
 		t.Errorf("got %q, want '_'", got)
+	}
+}
+
+func TestReturn(t *testing.T) {
+	got, err := parsec.Run(parsec.Return(42), "anything")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 42 {
+		t.Errorf("got %d, want 42", got)
+	}
+	// must not consume input
+	p := parsec.Then(parsec.Return("prefix"), parsec.String("hello"))
+	s, err := parsec.Run(p, "hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s != "hello" {
+		t.Errorf("got %q, want \"hello\"", s)
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 // Panics if p succeeds without consuming input, which would cause an infinite loop.
 func Many[T any](p Parser[T]) Parser[[]T] {
 	return func(in Input) ([]T, Input, error) {
-		var results []T
+		results := []T{}
 		cur := in
 		for {
 			val, next, err := p(cur)
@@ -69,6 +69,13 @@ func furthestError(a, b error) error {
 		return b
 	}
 	return a
+}
+
+// Return always succeeds with v without consuming any input.
+func Return[T any](v T) Parser[T] {
+	return func(in Input) (T, Input, error) {
+		return v, in, nil
+	}
 }
 
 // Option returns def if p fails, without consuming input.

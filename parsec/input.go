@@ -11,19 +11,25 @@ type Input interface {
 	Advance() Input
 	// IsEOF reports whether the input is exhausted.
 	IsEOF() bool
-	// Pos returns the current position (used for error reporting).
+	// Pos returns the rune offset from the start (used for furthest-error comparison).
 	Pos() int
+	// Line returns the 1-based line number of the current position.
+	Line() int
+	// Col returns the 1-based column number of the current position.
+	Col() int
 }
 
 // stringInput is the built-in Input implementation for string (rune slice) input.
 type stringInput struct {
-	src []rune
-	pos int
+	src  []rune
+	pos  int
+	line int
+	col  int
 }
 
 // NewInput returns an Input over the given string.
 func NewInput(s string) Input {
-	return stringInput{src: []rune(s)}
+	return stringInput{src: []rune(s), line: 1, col: 1}
 }
 
 func (in stringInput) Head() (rune, bool) {
@@ -34,27 +40,37 @@ func (in stringInput) Head() (rune, bool) {
 }
 
 func (in stringInput) Advance() Input {
-	return stringInput{src: in.src, pos: in.pos + 1}
+	if in.pos >= len(in.src) {
+		return in
+	}
+	next := stringInput{src: in.src, pos: in.pos + 1}
+	if in.src[in.pos] == '\n' {
+		next.line = in.line + 1
+		next.col = 1
+	} else {
+		next.line = in.line
+		next.col = in.col + 1
+	}
+	return next
 }
 
-func (in stringInput) IsEOF() bool {
-	return in.pos >= len(in.src)
-}
+func (in stringInput) IsEOF() bool { return in.pos >= len(in.src) }
+func (in stringInput) Pos() int    { return in.pos }
+func (in stringInput) Line() int   { return in.line }
+func (in stringInput) Col() int    { return in.col }
 
-func (in stringInput) Pos() int {
-	return in.pos
-}
-
-// ParseError records position and message of a parse failure.
+// ParseError records the position and message of a parse failure.
 type ParseError struct {
-	Pos     int
+	Pos     int // rune offset, used for furthest-error comparison
+	Line    int // 1-based line number
+	Col     int // 1-based column number
 	Message string
 }
 
 func (e *ParseError) Error() string {
-	return fmt.Sprintf("parse error at %d: %s", e.Pos, e.Message)
+	return fmt.Sprintf("parse error at line %d, col %d: %s", e.Line, e.Col, e.Message)
 }
 
 func newError(in Input, msg string) error {
-	return &ParseError{Pos: in.Pos(), Message: msg}
+	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: msg}
 }
