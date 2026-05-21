@@ -191,6 +191,26 @@ func Lexeme[T any](p Parser[T]) Parser[T] {
 	return Skip(p, Spaces())
 }
 
+// Chainl1 parses one or more occurrences of p separated by op,
+// folding the results left-associatively.
+func Chainl1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
+	type step struct {
+		fn  func(T, T) T
+		val T
+	}
+	steps := Many(Bind(op, func(fn func(T, T) T) Parser[step] {
+		return Map(p, func(v T) step { return step{fn, v} })
+	}))
+	return Bind(p, func(acc T) Parser[T] {
+		return Map(steps, func(ss []step) T {
+			for _, s := range ss {
+				acc = s.fn(acc, s.val)
+			}
+			return acc
+		})
+	})
+}
+
 // Natural parses one or more digits as a non-negative integer.
 func Natural() Parser[int] {
 	return Map(Many1(Digit()), func(digits []rune) int {

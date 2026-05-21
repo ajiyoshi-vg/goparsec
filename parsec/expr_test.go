@@ -2,18 +2,25 @@ package parsec_test
 
 // Integration test: arithmetic expression parser
 //
-// Grammar:
-//   expr   = term   ('+' | '-') term)*
-//   term   = factor (('*' | '/') factor)*
+// Grammar (all operators left-associative):
+//   expr   = chainl1(term,   addOp)
+//   term   = chainl1(factor, mulOp)
 //   factor = '(' expr ')' | natural
-//
-// This demonstrates recursive parser construction using var + func.
 
 import (
 	"testing"
 
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
+
+func add(a, b int) int { return a + b }
+func sub(a, b int) int { return a - b }
+func mul(a, b int) int { return a * b }
+func div(a, b int) int { return a / b }
+
+func opParser(c rune, fn func(int, int) int) parsec.Parser[func(int, int) int] {
+	return parsec.Map(parsec.Lexeme(parsec.Char(c)), func(rune) func(int, int) int { return fn })
+}
 
 func buildExprParser() parsec.Parser[int] {
 	var expr parsec.Parser[int]
@@ -29,53 +36,11 @@ func buildExprParser() parsec.Parser[int] {
 		return parsec.Choice(parsec.Lexeme(parsec.Natural()), paren)(in)
 	}
 
-	mulOp := parsec.Choice(
-		parsec.Map(parsec.Lexeme(parsec.Char('*')), func(rune) func(int, int) int { return func(a, b int) int { return a * b } }),
-		parsec.Map(parsec.Lexeme(parsec.Char('/')), func(rune) func(int, int) int { return func(a, b int) int { return a / b } }),
-	)
+	mulOp := parsec.Choice(opParser('*', mul), opParser('/', div))
+	addOp := parsec.Choice(opParser('+', add), opParser('-', sub))
 
-	term := func(in parsec.Input) (int, parsec.Input, error) {
-		return parsec.Map(
-			parsec.Bind(factor, func(first int) parsec.Parser[int] {
-				return parsec.Map(
-					parsec.Many(parsec.Bind(mulOp, func(op func(int, int) int) parsec.Parser[int] {
-						return parsec.Map(parsec.Parser[int](factor), func(v int) int { return op(first, v) })
-					})),
-					func(vs []int) int {
-						if len(vs) == 0 {
-							return first
-						}
-						return vs[len(vs)-1]
-					},
-				)
-			}),
-			func(v int) int { return v },
-		)(in)
-	}
-
-	addOp := parsec.Choice(
-		parsec.Map(parsec.Lexeme(parsec.Char('+')), func(rune) func(int, int) int { return func(a, b int) int { return a + b } }),
-		parsec.Map(parsec.Lexeme(parsec.Char('-')), func(rune) func(int, int) int { return func(a, b int) int { return a - b } }),
-	)
-
-	expr = func(in parsec.Input) (int, parsec.Input, error) {
-		return parsec.Map(
-			parsec.Bind(parsec.Parser[int](term), func(first int) parsec.Parser[int] {
-				return parsec.Map(
-					parsec.Many(parsec.Bind(addOp, func(op func(int, int) int) parsec.Parser[int] {
-						return parsec.Map(parsec.Parser[int](term), func(v int) int { return op(first, v) })
-					})),
-					func(vs []int) int {
-						if len(vs) == 0 {
-							return first
-						}
-						return vs[len(vs)-1]
-					},
-				)
-			}),
-			func(v int) int { return v },
-		)(in)
-	}
+	term := parsec.Chainl1(parsec.Parser[int](factor), mulOp)
+	expr = parsec.Chainl1(term, addOp)
 
 	return expr
 }
@@ -97,6 +62,8 @@ func TestExpr(t *testing.T) {
 		{"(1 + 2) * 3", 9},
 		{"(10 - 2) / 4", 2},
 		{"2 * (3 + 4)", 14},
+		{"12 / 3 / 2", 2},  // 左結合: (12/3)/2 = 2
+		{"10 - 3 - 2", 5},  // 左結合: (10-3)-2 = 5
 	}
 
 	for _, tt := range tests {

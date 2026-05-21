@@ -215,6 +215,47 @@ func TestLexeme(t *testing.T) {
 	}
 }
 
+func TestChainl1_single(t *testing.T) {
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 1 {
+		t.Errorf("got %d, want 1", got)
+	}
+}
+
+func TestChainl1_multiple(t *testing.T) {
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1+2+3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 6 {
+		t.Errorf("got %d, want 6", got)
+	}
+}
+
+func TestChainl1_leftAssoc(t *testing.T) {
+	divOp := parsec.Map(parsec.Char('/'), func(rune) func(int, int) int { return func(a, b int) int { return a / b } })
+	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), divOp), "12/3/2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 2 { // (12/3)/2 = 2、右結合なら 12/(3/2) = 8
+		t.Errorf("got %d, want 2 (left-assoc)", got)
+	}
+}
+
+func TestChainl1_fail(t *testing.T) {
+	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return func(a, b int) int { return a + b } })
+	_, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "abc")
+	if err == nil {
+		t.Error("expected error when p doesn't match")
+	}
+}
+
 func TestNatural(t *testing.T) {
 	tests := []struct {
 		input string
