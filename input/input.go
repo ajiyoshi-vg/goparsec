@@ -1,4 +1,4 @@
-package parsec
+package input
 
 import (
 	"errors"
@@ -30,8 +30,8 @@ type stringInput struct {
 	col  int
 }
 
-// NewStringInput returns an Input over the given string.
-func NewStringInput(s string) Input {
+// NewString returns an Input over the given string.
+func NewString(s string) Input {
 	return stringInput{src: []rune(s), line: 1, col: 1}
 }
 

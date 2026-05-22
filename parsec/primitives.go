@@ -1,15 +1,16 @@
 package parsec
 
+import "github.com/ajiyoshi-vg/goparsec/input"
 
 // Satisfy parses a single rune satisfying pred.
 func Satisfy(pred func(rune) bool) Parser[rune] {
-	return func(in Input) (rune, Input, error) {
+	return func(in input.Input) (rune, input.Input, error) {
 		c, ok := in.Head()
 		if !ok {
-			return 0, in, NewError(in, "unexpected end of input")
+			return 0, in, input.NewError(in, "unexpected end of input")
 		}
 		if !pred(c) {
-			return 0, in, ErrNoMatch
+			return 0, in, input.ErrNoMatch
 		}
 		return c, in.Advance(), nil
 	}
@@ -27,20 +28,20 @@ func AnyChar() Parser[rune] {
 
 // Literal parses the exact string s.
 func Literal(s string) Parser[string] {
-	return func(in Input) (string, Input, error) {
+	return func(in input.Input) (string, input.Input, error) {
 		cur := in
 		for i, c := range []rune(s) {
 			r, ok := cur.Head()
 			if !ok {
-				return "", in, NewErrorf(cur, "expected %q, got EOF", s)
+				return "", in, input.NewErrorf(cur, "expected %q, got EOF", s)
 			}
 			if r != c {
 				if i == 0 {
 					// Clean soft failure: no characters consumed yet.
-					return "", in, ErrNoMatch
+					return "", in, input.ErrNoMatch
 				}
 				// Partial match: report the deeper position for better error messages.
-				return "", in, NewErrorf(cur, "expected %q", s)
+				return "", in, input.NewErrorf(cur, "expected %q", s)
 			}
 			cur = cur.Advance()
 		}
@@ -50,10 +51,10 @@ func Literal(s string) Parser[string] {
 
 // EOF succeeds only at end of input.
 func EOF() Parser[struct{}] {
-	return func(in Input) (struct{}, Input, error) {
+	return func(in input.Input) (struct{}, input.Input, error) {
 		if !in.IsEOF() {
 			c, _ := in.Head()
-			return struct{}{}, in, NewErrorf(in, "expected EOF, got %q", c)
+			return struct{}{}, in, input.NewErrorf(in, "expected EOF, got %q", c)
 		}
 		return struct{}{}, in, nil
 	}

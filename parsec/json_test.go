@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
@@ -32,7 +33,7 @@ func jsonObject(pairs [][2]any) any {
 
 func newJSONParser() parsec.Parser[any] {
 	var jsonValue parsec.Parser[any]
-	lazy := parsec.Parser[any](func(in parsec.Input) (any, parsec.Input, error) { return jsonValue(in) })
+	lazy := parsec.Parser[any](func(in input.Input) (any, input.Input, error) { return jsonValue(in) })
 
 	w := parsec.Spaces()
 	// keyword and tok close over w — no need to pass it at each call site

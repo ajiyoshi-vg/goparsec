@@ -10,6 +10,7 @@ package parsec_test
 import (
 	"testing"
 
+	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
@@ -30,10 +31,10 @@ func buildExprParser() parsec.Parser[int] {
 		return parsec.Map(tok(c), func(rune) func(int, int) int { return fn })
 	}
 
-	factor := func(in parsec.Input) (int, parsec.Input, error) {
+	factor := func(in input.Input) (int, input.Input, error) {
 		paren := parsec.Between(
 			tok('('),
-			parsec.Parser[int](func(in parsec.Input) (int, parsec.Input, error) {
+			parsec.Parser[int](func(in input.Input) (int, input.Input, error) {
 				return expr(in)
 			}),
 			tok(')'),

@@ -1,4 +1,4 @@
-package parsec
+package input
 
 import (
 	"io"
@@ -19,10 +19,10 @@ type readerInput struct {
 	col     int
 }
 
-// NewReaderAtInput returns an Input that reads from r on demand.
+// NewReaderAt returns an Input that reads from r on demand.
 // r must implement io.ReaderAt (e.g. *strings.Reader, *bytes.Reader, *os.File).
 // The content of r is never buffered; each Head() call issues a ReadAt.
-func NewReaderAtInput(r io.ReaderAt) Input {
+func NewReaderAt(r io.ReaderAt) Input {
 	return readerInput{r: r, bytePos: 0, runePos: 0, line: 1, col: 1}
 }
 

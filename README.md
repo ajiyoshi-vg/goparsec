@@ -36,7 +36,7 @@ func main() {
 A `Parser[T]` is a function:
 
 ```go
-type Parser[T any] func(Input) (T, Input, error)
+type Parser[T any] func(input.Input) (T, input.Input, error)
 ```
 
 It consumes some of `Input`, returning a value of type `T` and the remaining
@@ -48,10 +48,10 @@ needs to be rolled back.
 
 ```go
 // Run executes p on in; remaining input is ignored.
-func Run[T any](p Parser[T], in Input) (T, error)
+func Run[T any](p Parser[T], in input.Input) (T, error)
 
 // RunFull executes p on in and fails if any input remains.
-func RunFull[T any](p Parser[T], in Input) (T, error)
+func RunFull[T any](p Parser[T], in input.Input) (T, error)
 
 // RunString and RunStringFull are shorthands for the common case of a string input.
 func RunString[T any](p Parser[T], s string) (T, error)
@@ -148,17 +148,17 @@ JSONString() Parser[string]
 Two input constructors are provided:
 
 ```go
-// NewStringInput wraps a string as an Input (pre-allocates a []rune slice).
-func NewStringInput(s string) Input
+// NewString wraps a string as an Input (pre-allocates a []rune slice).
+func NewString(s string) input.Input
 
-// NewReaderAtInput returns an Input backed by r.
+// NewReaderAt returns an Input backed by r.
 // Content is read on demand — no rune buffer is allocated.
 // The underlying r must remain valid for the duration of parsing.
-func NewReaderAtInput(r io.ReaderAt) Input
+func NewReaderAt(r io.ReaderAt) input.Input
 ```
 
 For the common case of parsing a string, use the `RunString`/`RunStringFull` shorthands.
-For any `Input` (including `NewReaderAtInput`), use `Run`/`RunFull` directly:
+For any `Input` (including `input.NewReaderAt`), use `Run`/`RunFull` directly:
 
 ```go
 // String shorthand
@@ -167,10 +167,10 @@ got, err := parsec.RunString(p, "1,2,3")
 // io.ReaderAt source
 f, _ := os.Open("data.txt")
 defer f.Close()
-got, err := parsec.Run(p, parsec.NewReaderAtInput(f))
+got, err := parsec.Run(p, input.NewReaderAt(f))
 ```
 
-`NewStringInput` pre-allocates a single `[]rune` slice and never reads from disk. `NewReaderAtInput` trades per-character I/O for O(parser-stack-depth) memory — useful for large files where you do not want to buffer the entire content.
+`input.NewString` pre-allocates a single `[]rune` slice and never reads from disk. `input.NewReaderAt` trades per-character I/O for O(parser-stack-depth) memory — useful for large files where you do not want to buffer the entire content.
 
 ## Errors
 
@@ -190,7 +190,7 @@ furthest position in the input.
 
 ## Writing custom parsers
 
-A custom parser is any function with the signature `func(Input) (T, Input, error)`.
+A custom parser is any function with the signature `func(input.Input) (T, input.Input, error)`.
 Use the two error constructors to integrate correctly with `Choice` and `Label`:
 
 ```go
@@ -200,24 +200,24 @@ var ErrNoMatch error
 
 // NewError returns a *ParseError at the current position.
 // Use this for failures that should not be silently retried.
-func NewError(in Input, msg string) error
+func NewError(in input.Input, msg string) error
 
 // NewErrorf is like NewError but formats the message via fmt.Sprintf.
-func NewErrorf(in Input, format string, args ...any) error
+func NewErrorf(in input.Input, format string, args ...any) error
 ```
 
 Example — a parser that matches the literal `42`:
 
 ```go
-fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
+fortyTwo := func(in input.Input) (int, input.Input, error) {
     c, ok := in.Head()
     if !ok || c != '4' {
-        return 0, in, parsec.ErrNoMatch // soft failure: Choice will try next
+        return 0, in, input.ErrNoMatch // soft failure: Choice will try next
     }
     cur := in.Advance()
     c, ok = cur.Head()
     if !ok || c != '2' {
-        return 0, in, parsec.NewError(cur, "expected '2' after '4'") // hard failure
+        return 0, in, input.NewError(cur, "expected '2' after '4'") // hard failure
     }
     return 42, cur.Advance(), nil
 }
@@ -243,10 +243,10 @@ func buildExpr() parsec.Parser[int] {
         return parsec.Map(tok(c), func(rune) func(int, int) int { return fn })
     }
 
-    factor := func(in parsec.Input) (int, parsec.Input, error) {
+    factor := func(in input.Input) (int, input.Input, error) {
         paren := parsec.Between(
             tok('('),
-            parsec.Parser[int](func(in parsec.Input) (int, parsec.Input, error) {
+            parsec.Parser[int](func(in input.Input) (int, input.Input, error) {
                 return expr(in)
             }),
             tok(')'),
