@@ -224,6 +224,46 @@ func TestCustomParser_politeErrors(t *testing.T) {
 	}
 }
 
+// TestNewErrorf verifies that NewErrorf produces a *ParseError with the formatted
+// message at the correct position, matching NewError(in, fmt.Sprintf(format, args...)).
+func TestNewErrorf(t *testing.T) {
+	p := func(in parsec.Input) (rune, parsec.Input, error) {
+		c, ok := in.Head()
+		if !ok {
+			return 0, in, parsec.NewErrorf(in, "expected digit, got EOF")
+		}
+		if c < '0' || c > '9' {
+			return 0, in, parsec.NewErrorf(in, "expected digit, got %q", c)
+		}
+		return c, in.Advance(), nil
+	}
+
+	// Success path unchanged.
+	got, err := parsec.Run(parsec.Parser[rune](p), "5abc")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != '5' {
+		t.Errorf("got %q, want '5'", got)
+	}
+
+	// Failure: formatted message and correct position.
+	_, err = parsec.Run(parsec.Parser[rune](p), "abc")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *ParseError, got %T: %v", err, err)
+	}
+	if pe.Message != `expected digit, got 'a'` {
+		t.Errorf("message = %q, want %q", pe.Message, `expected digit, got 'a'`)
+	}
+	if pe.Col != 1 {
+		t.Errorf("col = %d, want 1", pe.Col)
+	}
+}
+
 // TestChoice_allocsOnSoftFail verifies that failed alternatives in Choice
 // do not allocate heap objects (*ParseError).
 // The minimum unavoidable allocs are 3: []rune (NewInput), stringInput interface

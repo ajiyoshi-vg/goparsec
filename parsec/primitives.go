@@ -1,6 +1,5 @@
 package parsec
 
-import "fmt"
 
 // Satisfy parses a single rune satisfying pred.
 func Satisfy(pred func(rune) bool) Parser[rune] {
@@ -33,7 +32,7 @@ func Literal(s string) Parser[string] {
 		for i, c := range []rune(s) {
 			r, ok := cur.Head()
 			if !ok {
-				return "", in, NewError(cur, fmt.Sprintf("expected %q, got EOF", s))
+				return "", in, NewErrorf(cur, "expected %q, got EOF", s)
 			}
 			if r != c {
 				if i == 0 {
@@ -41,7 +40,7 @@ func Literal(s string) Parser[string] {
 					return "", in, ErrNoMatch
 				}
 				// Partial match: report the deeper position for better error messages.
-				return "", in, NewError(cur, fmt.Sprintf("expected %q", s))
+				return "", in, NewErrorf(cur, "expected %q", s)
 			}
 			cur = cur.Advance()
 		}
@@ -54,7 +53,7 @@ func EOF() Parser[struct{}] {
 	return func(in Input) (struct{}, Input, error) {
 		if !in.IsEOF() {
 			c, _ := in.Head()
-			return struct{}{}, in, NewError(in, fmt.Sprintf("expected EOF, got %q", c))
+			return struct{}{}, in, NewErrorf(in, "expected EOF, got %q", c)
 		}
 		return struct{}{}, in, nil
 	}

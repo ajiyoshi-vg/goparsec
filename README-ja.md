@@ -166,6 +166,9 @@ var ErrNoMatch error
 // NewError は現在位置に紐づいた *ParseError を返します。
 // 次の代替案に黙って進んでほしくない失敗に使います。
 func NewError(in Input, msg string) error
+
+// NewErrorf は NewError の fmt.Sprintf 版です。
+func NewErrorf(in Input, format string, args ...any) error
 ```
 
 例 — リテラル `42` にマッチするパーサ：

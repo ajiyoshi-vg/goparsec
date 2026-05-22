@@ -1,7 +1,6 @@
 package parsec
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -318,7 +317,7 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 		if err == nil {
 			c, ok := in.Head()
 			if ok {
-				return struct{}{}, in, NewError(in, fmt.Sprintf("unexpected %q", c))
+				return struct{}{}, in, NewErrorf(in, "unexpected %q", c)
 			}
 			return struct{}{}, in, NewError(in, "unexpected input")
 		}
