@@ -193,6 +193,31 @@ func FuzzJSONString(f *testing.F) {
 	})
 }
 
+// TestGoString_allocs verifies that GoString avoids the []rune intermediate slice.
+// A strings.Builder-based loop should eliminate the []rune allocation and the
+// rune-to-string conversion.
+func TestGoString_allocs(t *testing.T) {
+	p := parsec.GoString()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, `"hello"`)
+	})
+	// 2 (NewInput) + 7 (Advance per char incl. quotes) + ~2 (Builder buf) = ~11
+	if allocs > 13 {
+		t.Errorf("GoString allocs = %.0f, want ≤13", allocs)
+	}
+}
+
+// TestJSONString_allocs mirrors TestGoString_allocs for the JSON variant.
+func TestJSONString_allocs(t *testing.T) {
+	p := parsec.JSONString()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, `"hello"`)
+	})
+	if allocs > 13 {
+		t.Errorf("JSONString allocs = %.0f, want ≤13", allocs)
+	}
+}
+
 func BenchmarkGoString(b *testing.B) {
 	p := parsec.GoString()
 	inputs := []string{

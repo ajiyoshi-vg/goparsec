@@ -3,6 +3,7 @@ package parsec
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Many parses zero or more occurrences of p. Always succeeds.
@@ -248,35 +249,64 @@ func Integer() Parser[int] {
 // Float parses an optional '-', one or more digits, an optional fractional part
 // ('.' digits), and an optional exponent ([eE][+-]? digits), returning float64.
 func Float() Parser[float64] {
-	sign := Option("", Map(Char('-'), func(rune) string { return "-" }))
-	digits := Map(Many1(Digit()), func(rs []rune) string { return string(rs) })
-	frac := Option("", Map(
-		Bind(Char('.'), func(rune) Parser[[]rune] { return Many1(Digit()) }),
-		func(ds []rune) string { return "." + string(ds) },
-	))
-	expSign := Option("", Choice(
-		Map(Char('+'), func(rune) string { return "+" }),
-		Map(Char('-'), func(rune) string { return "-" }),
-	))
-	exp := Option("", Bind(
-		Satisfy(func(r rune) bool { return r == 'e' || r == 'E' }),
-		func(e rune) Parser[string] {
-			return Bind(expSign, func(s string) Parser[string] {
-				return Map(digits, func(d string) string { return string(e) + s + d })
-			})
-		},
-	))
-	floatStr := Bind(sign, func(s string) Parser[string] {
-		return Bind(digits, func(d string) Parser[string] {
-			return Bind(frac, func(f string) Parser[string] {
-				return Map(exp, func(e string) string { return s + d + f + e })
-			})
-		})
-	})
-	return Map(floatStr, func(s string) float64 {
-		f, _ := strconv.ParseFloat(s, 64)
-		return f
-	})
+	return func(in Input) (float64, Input, error) {
+		var b strings.Builder
+		cur := in
+
+		if c, ok := cur.Head(); ok && c == '-' {
+			b.WriteByte('-')
+			cur = cur.Advance()
+		}
+
+		c, ok := cur.Head()
+		if !ok || c < '0' || c > '9' {
+			return 0, in, ErrNoMatch
+		}
+		for ok && c >= '0' && c <= '9' {
+			b.WriteByte(byte(c))
+			cur = cur.Advance()
+			c, ok = cur.Head()
+		}
+
+		if ok && c == '.' {
+			b.WriteByte('.')
+			cur = cur.Advance()
+			c, ok = cur.Head()
+			if !ok || c < '0' || c > '9' {
+				return 0, in, NewError(cur, "expected digit after '.'")
+			}
+			for ok && c >= '0' && c <= '9' {
+				b.WriteByte(byte(c))
+				cur = cur.Advance()
+				c, ok = cur.Head()
+			}
+		}
+
+		if ok && (c == 'e' || c == 'E') {
+			b.WriteByte(byte(c))
+			cur = cur.Advance()
+			c, ok = cur.Head()
+			if ok && (c == '+' || c == '-') {
+				b.WriteByte(byte(c))
+				cur = cur.Advance()
+				c, ok = cur.Head()
+			}
+			if !ok || c < '0' || c > '9' {
+				return 0, in, NewError(cur, "expected digit in exponent")
+			}
+			for ok && c >= '0' && c <= '9' {
+				b.WriteByte(byte(c))
+				cur = cur.Advance()
+				c, ok = cur.Head()
+			}
+		}
+
+		f, err := strconv.ParseFloat(b.String(), 64)
+		if err != nil {
+			return 0, in, NewError(in, err.Error())
+		}
+		return f, cur, nil
+	}
 }
 
 // NotFollowedBy succeeds if p fails, consuming no input.

@@ -1,5 +1,7 @@
 package parsec
 
+import "strings"
+
 // GoString parses a Go double-quoted string literal with escape sequences.
 //
 // Supported escapes:
@@ -8,11 +10,7 @@ package parsec
 //   \uNNNN        (Unicode code point, 4 hex digits)
 //   \UNNNNNNNN    (Unicode code point, 8 hex digits)
 func GoString() Parser[string] {
-	return Between(
-		Char('"'),
-		Char('"'),
-		Map(Many(goStringChar()), func(rs []rune) string { return string(rs) }),
-	)
+	return Between(Char('"'), Char('"'), manyString(goStringChar()))
 }
 
 func goStringChar() Parser[rune] {
@@ -80,11 +78,7 @@ func hexDigitVal(r rune) rune {
 //	\uNNNN              (Unicode code point, 4 hex digits)
 //	\uHHHH\uLLLL        (UTF-16 surrogate pair for code points > U+FFFF)
 func JSONString() Parser[string] {
-	return Between(
-		Char('"'),
-		Char('"'),
-		Map(Many(jsonStringChar()), func(rs []rune) string { return string(rs) }),
-	)
+	return Between(Char('"'), Char('"'), manyString(jsonStringChar()))
 }
 
 func jsonStringChar() Parser[rune] {
@@ -131,4 +125,24 @@ func jsonUnicodeEscape() Parser[rune] {
 		}
 		return Return(r)
 	})
+}
+
+// manyString runs p in a loop, accumulating runes directly into a strings.Builder.
+// This avoids the []rune intermediate slice that Map(Many(p), string) would allocate.
+func manyString(p Parser[rune]) Parser[string] {
+	return func(in Input) (string, Input, error) {
+		var b strings.Builder
+		cur := in
+		for {
+			r, next, err := p(cur)
+			if err != nil {
+				return b.String(), cur, nil
+			}
+			if next.Pos() == cur.Pos() {
+				panic("parsec: manyString: parser succeeded without consuming input")
+			}
+			b.WriteRune(r)
+			cur = next
+		}
+	}
 }
