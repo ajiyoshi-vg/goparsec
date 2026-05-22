@@ -340,6 +340,38 @@ func TestLabel(t *testing.T) {
 	}
 }
 
+// TestLabel_softFail verifies that ErrNoMatch (no input consumed) is replaced
+// with the label message at the starting position.
+func TestLabel_softFail(t *testing.T) {
+	p := parsec.Label(parsec.Digit(), "digit")
+	_, err := parsec.Run(p, "abc")
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *ParseError, got %T", err)
+	}
+	if pe.Message != "expected digit" {
+		t.Errorf("message = %q, want \"expected digit\"", pe.Message)
+	}
+	if pe.Col != 1 {
+		t.Errorf("col = %d, want 1", pe.Col)
+	}
+}
+
+// TestLabel_hardFail verifies that a *ParseError from a partial match is passed
+// through unchanged — Label must not reset the position to the start.
+func TestLabel_hardFail(t *testing.T) {
+	// String("test") on "tesar": consumes 't','e','s' then fails at col 4.
+	p := parsec.Label(parsec.String("test"), "keyword")
+	_, err := parsec.Run(p, "tesar")
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *ParseError, got %T", err)
+	}
+	if pe.Col != 4 {
+		t.Errorf("col = %d, want 4 (hard failure must not be reset to col 1)", pe.Col)
+	}
+}
+
 func TestCount(t *testing.T) {
 	got, err := parsec.Run(parsec.Count(3, parsec.Digit()), "123abc")
 	if err != nil {

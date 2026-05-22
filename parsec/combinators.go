@@ -330,10 +330,16 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 func Label[T any](p Parser[T], label string) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		val, next, err := p(in)
-		if err != nil {
+		if err == nil {
+			return val, next, nil
+		}
+		if err == ErrNoMatch {
+			// Soft failure: no input consumed; replace with the label message.
 			return val, in, NewError(in, "expected "+label)
 		}
-		return val, next, nil
+		// Hard failure: p consumed input before failing; pass the error through
+		// so callers see the precise failure position, not the start of the label.
+		return val, in, err
 	}
 }
 
