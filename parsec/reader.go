@@ -19,10 +19,10 @@ type readerInput struct {
 	col     int
 }
 
-// NewReaderInput returns an Input that reads from r on demand.
+// NewReaderAtInput returns an Input that reads from r on demand.
 // r must implement io.ReaderAt (e.g. *strings.Reader, *bytes.Reader, *os.File).
 // The content of r is never buffered; each Head() call issues a ReadAt.
-func NewReaderInput(r io.ReaderAt) Input {
+func NewReaderAtInput(r io.ReaderAt) Input {
 	return readerInput{r: r, bytePos: 0, runePos: 0, line: 1, col: 1}
 }
 

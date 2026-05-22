@@ -150,10 +150,10 @@ parsec.RunFull(p, "入力文字列")
 `io.ReaderAt`（`*os.File`、`*strings.Reader`、`*bytes.Reader` など）から、全内容を `[]rune` バッファに展開せずにパースするには：
 
 ```go
-// NewReaderInput は r を元にした Input を返します。
+// NewReaderAtInput は r を元にした Input を返します。
 // 内容はオンデマンドで読み込まれます — rune バッファは確保されません。
 // パース中、元の r は有効な状態を維持する必要があります。
-func NewReaderInput(r io.ReaderAt) Input
+func NewReaderAtInput(r io.ReaderAt) Input
 ```
 
 使用例：
@@ -161,7 +161,7 @@ func NewReaderInput(r io.ReaderAt) Input
 ```go
 f, _ := os.Open("data.txt")
 defer f.Close()
-in := parsec.NewReaderInput(f)
+in := parsec.NewReaderAtInput(f)
 got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
 ```
 

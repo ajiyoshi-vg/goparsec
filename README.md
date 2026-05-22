@@ -151,10 +151,10 @@ parsec.RunFull(p, "input string")
 To parse from an `io.ReaderAt` (e.g. `*os.File`, `*strings.Reader`, `*bytes.Reader`) without loading the entire contents into a `[]rune` buffer:
 
 ```go
-// NewReaderInput returns an Input backed by r.
+// NewReaderAtInput returns an Input backed by r.
 // Content is read on demand — no rune buffer is allocated.
 // The underlying r must remain valid for the duration of parsing.
-func NewReaderInput(r io.ReaderAt) Input
+func NewReaderAtInput(r io.ReaderAt) Input
 ```
 
 Example:
@@ -162,7 +162,7 @@ Example:
 ```go
 f, _ := os.Open("data.txt")
 defer f.Close()
-in := parsec.NewReaderInput(f)
+in := parsec.NewReaderAtInput(f)
 got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
 ```
 

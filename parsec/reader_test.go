@@ -10,7 +10,7 @@ import (
 
 func TestReaderInput_basic(t *testing.T) {
 	r := strings.NewReader("abc")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	c, ok := in.Head()
 	if !ok || c != 'a' {
@@ -41,7 +41,7 @@ func TestReaderInput_basic(t *testing.T) {
 
 func TestReaderInput_EOF(t *testing.T) {
 	r := strings.NewReader("")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	if !in.IsEOF() {
 		t.Fatal("IsEOF() = false, want true on empty input")
@@ -54,7 +54,7 @@ func TestReaderInput_EOF(t *testing.T) {
 
 func TestReaderInput_advancePastEnd(t *testing.T) {
 	r := strings.NewReader("x")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	in2 := in.Advance()
 	if !in2.IsEOF() {
@@ -74,7 +74,7 @@ func TestReaderInput_lineCol(t *testing.T) {
 	//   'b'  line=2 col=1
 	//   'c'  line=2 col=2
 	r := strings.NewReader("a\nbc")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	in = in.Advance() // past 'a'
 	in = in.Advance() // past '\n'
@@ -94,7 +94,7 @@ func TestReaderInput_lineCol(t *testing.T) {
 func TestReaderInput_multibyte(t *testing.T) {
 	// "日本語" — each rune is 3 bytes in UTF-8
 	r := strings.NewReader("日本語")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	c, ok := in.Head()
 	if !ok || c != '日' {
@@ -131,7 +131,7 @@ func TestReaderInput_multibyte(t *testing.T) {
 func TestReaderInput_backtrackImplicit(t *testing.T) {
 	// Verify that the original Input is unchanged after Advance (immutable)
 	r := strings.NewReader("abc")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	in2 := in.Advance()
 	_ = in2.Advance()
@@ -145,7 +145,7 @@ func TestReaderInput_backtrackImplicit(t *testing.T) {
 
 func TestReaderInput_withParser(t *testing.T) {
 	r := strings.NewReader("1,2,3")
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
 	got, _, err := p(in)
@@ -166,7 +166,7 @@ func TestReaderInput_withParser(t *testing.T) {
 func TestReaderInput_bytes(t *testing.T) {
 	// bytes.Reader also implements io.ReaderAt
 	r := bytes.NewReader([]byte("hello"))
-	in := parsec.NewReaderInput(r)
+	in := parsec.NewReaderAtInput(r)
 
 	p := parsec.Many1Chars(parsec.Letter())
 	got, _, err := p(in)
