@@ -111,6 +111,9 @@ Map2(p1, p2, f)        // run p1 and p2 in sequence, apply f to both results
 Map3(p1, p2, p3, f)    // run three parsers in sequence, apply f to all results
 Map4(p1, p2, p3, p4, f)
 TryMap(p, f)           // like Map, but f may return an error; failure becomes a ParseError
+TryMap2(p1, p2, f)
+TryMap3(p1, p2, p3, f)
+TryMap4(p1, p2, p3, p4, f)
 Return(v)              // always succeeds with v, consuming nothing
 Value(p, v)            // run p (discarding result), return v
 ```
