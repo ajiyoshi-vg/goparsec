@@ -182,6 +182,22 @@ func TestRunFull_extraInput(t *testing.T) {
 	}
 }
 
+// TestChoice_allocsOnSoftFail verifies that failed alternatives in Choice
+// do not allocate heap objects (*ParseError).
+// The minimum unavoidable allocs are 3: []rune (NewInput), stringInput interface
+// boxing (NewInput), and stringInput interface boxing (Advance on success).
+func TestChoice_allocsOnSoftFail(t *testing.T) {
+	p := parsec.Choice(parsec.Char('+'), parsec.Char('-'), parsec.Char('*'), parsec.Char('/'))
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "/") // last alternative matches; 3 alternatives fail first
+	})
+	// 3 = minimum with immutable Input (NewInput×2 + Advance×1).
+	// Before this optimization: 9 allocs (3 failing *ParseError × 2 each via fmt.Sprintf).
+	if allocs > 3 {
+		t.Errorf("Choice soft-fail allocs = %.0f, want ≤3", allocs)
+	}
+}
+
 func BenchmarkChar(b *testing.B) {
 	p := parsec.Char('a')
 	for b.Loop() {

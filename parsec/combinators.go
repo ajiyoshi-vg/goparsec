@@ -55,14 +55,22 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 			}
 			bestErr = furthestError(bestErr, err)
 		}
+		// All alternatives were soft failures with no position info: synthesize a *ParseError.
+		if bestErr == errNoMatch {
+			return zero, in, newError(in, "no alternatives matched")
+		}
 		return zero, in, bestErr
 	}
 }
 
 // furthestError returns whichever error occurred at the greater input position.
+// errNoMatch (soft failure with no position) always loses to a *ParseError.
 func furthestError(a, b error) error {
-	if a == nil {
+	if a == nil || a == errNoMatch {
 		return b
+	}
+	if b == nil || b == errNoMatch {
+		return a
 	}
 	pa, ok1 := a.(*ParseError)
 	pb, ok2 := b.(*ParseError)
