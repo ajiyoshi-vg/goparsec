@@ -55,7 +55,7 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		var zero T
 		if len(ps) == 0 {
-			return zero, in, newError(in, "Choice: no alternatives")
+			return zero, in, NewError(in, "Choice: no alternatives")
 		}
 		var bestErr error
 		for _, p := range ps {
@@ -66,20 +66,20 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 			bestErr = furthestError(bestErr, err)
 		}
 		// All alternatives were soft failures with no position info: synthesize a *ParseError.
-		if bestErr == errNoMatch {
-			return zero, in, newError(in, "no alternatives matched")
+		if bestErr == ErrNoMatch {
+			return zero, in, NewError(in, "no alternatives matched")
 		}
 		return zero, in, bestErr
 	}
 }
 
 // furthestError returns whichever error occurred at the greater input position.
-// errNoMatch (soft failure with no position) always loses to a *ParseError.
+// ErrNoMatch (soft failure with no position) always loses to a *ParseError.
 func furthestError(a, b error) error {
-	if a == nil || a == errNoMatch {
+	if a == nil || a == ErrNoMatch {
 		return b
 	}
-	if b == nil || b == errNoMatch {
+	if b == nil || b == ErrNoMatch {
 		return a
 	}
 	pa, ok1 := a.(*ParseError)
@@ -227,7 +227,7 @@ func Integer() Parser[int] {
 		}
 		c, ok := cur.Head()
 		if !ok || c < '0' || c > '9' {
-			return 0, in, errNoMatch
+			return 0, in, ErrNoMatch
 		}
 		n := int(c - '0')
 		cur = cur.Advance()
@@ -288,9 +288,9 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 		if err == nil {
 			c, ok := in.Head()
 			if ok {
-				return struct{}{}, in, newError(in, fmt.Sprintf("unexpected %q", c))
+				return struct{}{}, in, NewError(in, fmt.Sprintf("unexpected %q", c))
 			}
-			return struct{}{}, in, newError(in, "unexpected input")
+			return struct{}{}, in, NewError(in, "unexpected input")
 		}
 		return struct{}{}, in, nil
 	}
@@ -301,7 +301,7 @@ func Label[T any](p Parser[T], label string) Parser[T] {
 	return func(in Input) (T, Input, error) {
 		val, next, err := p(in)
 		if err != nil {
-			return val, in, newError(in, "expected "+label)
+			return val, in, NewError(in, "expected "+label)
 		}
 		return val, next, nil
 	}
@@ -366,7 +366,7 @@ func Natural() Parser[int] {
 	return func(in Input) (int, Input, error) {
 		c, ok := in.Head()
 		if !ok || c < '0' || c > '9' {
-			return 0, in, errNoMatch
+			return 0, in, ErrNoMatch
 		}
 		n, cur := int(c-'0'), in.Advance()
 		for {

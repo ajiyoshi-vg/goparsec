@@ -122,7 +122,7 @@ func jsonUnicodeEscape() Parser[rune] {
 				return Bind(hex4, func(lo rune) Parser[rune] {
 					if lo < 0xDC00 || lo > 0xDFFF {
 						return func(in Input) (rune, Input, error) {
-							return 0, in, newError(in, "invalid surrogate pair: low surrogate expected")
+							return 0, in, NewError(in, "invalid surrogate pair: low surrogate expected")
 						}
 					}
 					return Return(0x10000 + (r-0xD800)*0x400 + (lo-0xDC00))

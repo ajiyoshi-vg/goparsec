@@ -6,9 +6,9 @@ type Parser[T any] func(Input) (T, Input, error)
 // Run executes p on s, returning the parsed value (remaining input is ignored).
 func Run[T any](p Parser[T], s string) (T, error) {
 	v, rest, err := p(NewInput(s))
-	if err == errNoMatch {
-		// errNoMatch carries no message; rest holds the failure position.
-		err = newError(rest, "no match")
+	if err == ErrNoMatch {
+		// ErrNoMatch carries no message; rest holds the failure position.
+		err = NewError(rest, "no match")
 	}
 	return v, err
 }
@@ -20,7 +20,7 @@ func RunFull[T any](p Parser[T], s string) (T, error) {
 		return v, err
 	}
 	if !rest.IsEOF() {
-		return v, newError(rest, "unexpected input")
+		return v, NewError(rest, "unexpected input")
 	}
 	return v, nil
 }

@@ -7,10 +7,10 @@ func Satisfy(pred func(rune) bool) Parser[rune] {
 	return func(in Input) (rune, Input, error) {
 		c, ok := in.Head()
 		if !ok {
-			return 0, in, newError(in, "unexpected end of input")
+			return 0, in, NewError(in, "unexpected end of input")
 		}
 		if !pred(c) {
-			return 0, in, errNoMatch
+			return 0, in, ErrNoMatch
 		}
 		return c, in.Advance(), nil
 	}
@@ -33,15 +33,15 @@ func String(s string) Parser[string] {
 		for i, c := range []rune(s) {
 			r, ok := cur.Head()
 			if !ok {
-				return "", in, newError(cur, fmt.Sprintf("expected %q, got EOF", s))
+				return "", in, NewError(cur, fmt.Sprintf("expected %q, got EOF", s))
 			}
 			if r != c {
 				if i == 0 {
 					// Clean soft failure: no characters consumed yet.
-					return "", in, errNoMatch
+					return "", in, ErrNoMatch
 				}
 				// Partial match: report the deeper position for better error messages.
-				return "", in, newError(cur, fmt.Sprintf("expected %q", s))
+				return "", in, NewError(cur, fmt.Sprintf("expected %q", s))
 			}
 			cur = cur.Advance()
 		}
@@ -54,7 +54,7 @@ func EOF() Parser[struct{}] {
 	return func(in Input) (struct{}, Input, error) {
 		if !in.IsEOF() {
 			c, _ := in.Head()
-			return struct{}{}, in, newError(in, fmt.Sprintf("expected EOF, got %q", c))
+			return struct{}{}, in, NewError(in, fmt.Sprintf("expected EOF, got %q", c))
 		}
 		return struct{}{}, in, nil
 	}
