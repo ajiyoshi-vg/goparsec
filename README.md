@@ -168,6 +168,9 @@ var ErrNoMatch error
 // NewError returns a *ParseError at the current position.
 // Use this for failures that should not be silently retried.
 func NewError(in Input, msg string) error
+
+// NewErrorf is like NewError but formats the message via fmt.Sprintf.
+func NewErrorf(in Input, format string, args ...any) error
 ```
 
 Example — a parser that matches the literal `42`:

@@ -89,3 +89,8 @@ var ErrNoMatch = errors.New("parsec: no match")
 func NewError(in Input, msg string) error {
 	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: msg}
 }
+
+// NewErrorf is like NewError but formats the message using fmt.Sprintf.
+func NewErrorf(in Input, format string, args ...any) error {
+	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: fmt.Sprintf(format, args...)}
+}
