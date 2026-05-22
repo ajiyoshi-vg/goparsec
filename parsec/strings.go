@@ -10,7 +10,7 @@ import "strings"
 //   \uNNNN        (Unicode code point, 4 hex digits)
 //   \UNNNNNNNN    (Unicode code point, 8 hex digits)
 func GoString() Parser[string] {
-	return Between(Char('"'), Char('"'), manyString(goStringChar()))
+	return Between(Char('"'), manyString(goStringChar()), Char('"'))
 }
 
 func goStringChar() Parser[rune] {
@@ -78,7 +78,7 @@ func hexDigitVal(r rune) rune {
 //	\uNNNN              (Unicode code point, 4 hex digits)
 //	\uHHHH\uLLLL        (UTF-16 surrogate pair for code points > U+FFFF)
 func JSONString() Parser[string] {
-	return Between(Char('"'), Char('"'), manyString(jsonStringChar()))
+	return Between(Char('"'), manyString(jsonStringChar()), Char('"'))
 }
 
 func jsonStringChar() Parser[rune] {

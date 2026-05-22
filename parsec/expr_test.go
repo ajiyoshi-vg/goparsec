@@ -33,10 +33,10 @@ func buildExprParser() parsec.Parser[int] {
 	factor := func(in parsec.Input) (int, parsec.Input, error) {
 		paren := parsec.Between(
 			tok('('),
-			tok(')'),
 			parsec.Parser[int](func(in parsec.Input) (int, parsec.Input, error) {
 				return expr(in)
 			}),
+			tok(')'),
 		)
 		return parsec.Choice(parsec.Then(w, parsec.Integer()), paren)(in)
 	}
