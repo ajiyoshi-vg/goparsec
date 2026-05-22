@@ -194,7 +194,7 @@ func SepBy[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
 
 // Spaces parses zero or more whitespace characters.
 func Spaces() Parser[string] {
-	return Map(Many(Space()), func(rs []rune) string { return string(rs) })
+	return ManyChars(Space())
 }
 
 // Chainl1 parses one or more occurrences of p separated by op,

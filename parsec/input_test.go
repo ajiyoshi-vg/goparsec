@@ -59,7 +59,7 @@ func TestParseError_lineCol(t *testing.T) {
 	}
 
 	// after "hello\n", next position is line 2, col 1
-	p := parsec.Then(parsec.String("hello\n"), parsec.Char('x'))
+	p := parsec.Then(parsec.Literal("hello\n"), parsec.Char('x'))
 	_, err = parsec.Run(p, "hello\nworld")
 	pe, ok = err.(*parsec.ParseError)
 	if !ok {

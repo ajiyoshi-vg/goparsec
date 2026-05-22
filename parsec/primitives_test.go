@@ -50,8 +50,8 @@ func TestChar_fail(t *testing.T) {
 	}
 }
 
-func TestString(t *testing.T) {
-	got, err := parsec.Run(parsec.String("hello"), "hello world")
+func TestLiteral(t *testing.T) {
+	got, err := parsec.Run(parsec.Literal("hello"), "hello world")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,14 +61,14 @@ func TestString(t *testing.T) {
 }
 
 func TestString_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.String("world"), "hello")
+	_, err := parsec.Run(parsec.Literal("world"), "hello")
 	if err == nil {
 		t.Error("expected error")
 	}
 }
 
 func TestString_partialEOF(t *testing.T) {
-	_, err := parsec.Run(parsec.String("hello"), "hel")
+	_, err := parsec.Run(parsec.Literal("hello"), "hel")
 	if err == nil {
 		t.Error("expected error on short input")
 	}
@@ -254,8 +254,8 @@ func BenchmarkSatisfy(b *testing.B) {
 	}
 }
 
-func BenchmarkString(b *testing.B) {
-	p := parsec.String("hello")
+func BenchmarkLiteral(b *testing.B) {
+	p := parsec.Literal("hello")
 	for b.Loop() {
 		parsec.Run(p, "hello world")
 	}

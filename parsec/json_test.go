@@ -37,7 +37,7 @@ func newJSONParser() parsec.Parser[any] {
 	w := parsec.Spaces()
 	// keyword and tok close over w — no need to pass it at each call site
 	keyword := func(s string, f func(string) any) parsec.Parser[any] {
-		return parsec.Then(w, parsec.Map(parsec.String(s), f))
+		return parsec.Then(w, parsec.Map(parsec.Literal(s), f))
 	}
 	tok := func(c rune) parsec.Parser[rune] {
 		return parsec.Then(w, parsec.Char(c))

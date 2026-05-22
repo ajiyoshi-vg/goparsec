@@ -26,8 +26,8 @@ func AnyChar() Parser[rune] {
 	return Satisfy(func(rune) bool { return true })
 }
 
-// String parses the exact string s.
-func String(s string) Parser[string] {
+// Literal parses the exact string s.
+func Literal(s string) Parser[string] {
 	return func(in Input) (string, Input, error) {
 		cur := in
 		for i, c := range []rune(s) {

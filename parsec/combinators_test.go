@@ -105,7 +105,7 @@ func TestReturn(t *testing.T) {
 		t.Errorf("got %d, want 42", got)
 	}
 	// must not consume input
-	p := parsec.Then(parsec.Return("prefix"), parsec.String("hello"))
+	p := parsec.Then(parsec.Return("prefix"), parsec.Literal("hello"))
 	s, err := parsec.Run(p, "hello")
 	if err != nil {
 		t.Fatal(err)
@@ -232,7 +232,7 @@ func TestMany_nonConsuming_panics(t *testing.T) {
 func TestChoice_furthestError(t *testing.T) {
 	// "test" reaches pos 3, "true" reaches pos 1 on "tesar"
 	// should report the furthest position regardless of parser order
-	p := parsec.Choice(parsec.String("test"), parsec.String("true"))
+	p := parsec.Choice(parsec.Literal("test"), parsec.Literal("true"))
 	_, err := parsec.Run(p, "tesar")
 	if err == nil {
 		t.Fatal("expected error")
@@ -297,7 +297,7 @@ func intPow(base, exp int) int {
 
 func TestNotFollowedBy_success(t *testing.T) {
 	// "if" followed by space: OK as keyword
-	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
 	_, err := parsec.Run(p, "if ")
 	if err != nil {
 		t.Fatalf("expected success: %v", err)
@@ -305,7 +305,7 @@ func TestNotFollowedBy_success(t *testing.T) {
 }
 
 func TestNotFollowedBy_atEOF(t *testing.T) {
-	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
 	_, err := parsec.Run(p, "if")
 	if err != nil {
 		t.Fatalf("expected success at EOF: %v", err)
@@ -314,7 +314,7 @@ func TestNotFollowedBy_atEOF(t *testing.T) {
 
 func TestNotFollowedBy_fail(t *testing.T) {
 	// "ifs" must not match keyword "if"
-	p := parsec.Then(parsec.String("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
+	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
 	_, err := parsec.Run(p, "ifs")
 	if err == nil {
 		t.Error("expected failure: 'ifs' should not match keyword 'if'")
@@ -361,7 +361,7 @@ func TestLabel_softFail(t *testing.T) {
 // through unchanged — Label must not reset the position to the start.
 func TestLabel_hardFail(t *testing.T) {
 	// String("test") on "tesar": consumes 't','e','s' then fails at col 4.
-	p := parsec.Label(parsec.String("test"), "keyword")
+	p := parsec.Label(parsec.Literal("test"), "keyword")
 	_, err := parsec.Run(p, "tesar")
 	pe, ok := err.(*parsec.ParseError)
 	if !ok {
@@ -390,7 +390,7 @@ func TestCount_tooFew(t *testing.T) {
 }
 
 func TestManyTill(t *testing.T) {
-	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
 	got, err := parsec.Run(p, "hello*/world")
 	if err != nil {
 		t.Fatal(err)
@@ -401,7 +401,7 @@ func TestManyTill(t *testing.T) {
 }
 
 func TestManyTill_empty(t *testing.T) {
-	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
 	got, err := parsec.Run(p, "*/rest")
 	if err != nil {
 		t.Fatal(err)
@@ -420,7 +420,7 @@ func TestManyTill_nonConsuming_panics(t *testing.T) {
 			t.Error("expected panic: ManyTill with non-consuming body causes infinite loop")
 		}
 	}()
-	parsec.Run(parsec.ManyTill(parsec.Return('x'), parsec.String("*/")), "hello*/")
+	parsec.Run(parsec.ManyTill(parsec.Return('x'), parsec.Literal("*/")), "hello*/")
 }
 
 func TestChoice_noArgs_fails(t *testing.T) {
@@ -431,7 +431,7 @@ func TestChoice_noArgs_fails(t *testing.T) {
 }
 
 func TestManyTill_noEnd(t *testing.T) {
-	p := parsec.ManyTill(parsec.AnyChar(), parsec.String("*/"))
+	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
 	_, err := parsec.Run(p, "hello world")
 	if err == nil {
 		t.Error("expected error when end delimiter not found")

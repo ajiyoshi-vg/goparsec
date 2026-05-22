@@ -60,7 +60,7 @@ func RunFull[T any](p Parser[T], s string) (T, error)
 |---|---|
 | `Char(c)` | the exact rune `c` |
 | `AnyChar()` | any single rune |
-| `String(s)` | the exact string `s` |
+| `Literal(s)` | the exact string `s` |
 | `Satisfy(pred)` | a rune where `pred(r)` is true |
 | `Digit()` | `0`–`9` |
 | `Letter()` | ASCII letter `a`–`z`, `A`–`Z` |
@@ -83,11 +83,13 @@ Bind(p, f)              // run p, pass result to f, run the returned parser
 ### Repetition
 
 ```go
-Many(p)          // zero or more; always succeeds
-Many1(p)         // one or more; fails if p never matches
-Count(n, p)      // exactly n times
-SepBy(p, sep)    // zero or more p, separated by sep
-ManyTill(p, end) // zero or more p until end succeeds; consumes end
+Many(p)           // zero or more; always succeeds
+Many1(p)          // one or more; fails if p never matches
+ManyChars(p)      // zero or more runes, collected into a string
+Many1Chars(p)     // one or more runes, collected into a string
+Count(n, p)       // exactly n times
+SepBy(p, sep)     // zero or more p, separated by sep
+ManyTill(p, end)  // zero or more p until end succeeds; consumes end
 ```
 
 ### Choice and optionality
