@@ -6,7 +6,7 @@ import (
 	"github.com/ajiyoshi-vg/goparsec/input"
 )
 
-func TestInput_Head(t *testing.T) {
+func TestStringInput_Head(t *testing.T) {
 	in := input.NewString("abc")
 
 	c, ok := in.Head()
@@ -15,7 +15,7 @@ func TestInput_Head(t *testing.T) {
 	}
 }
 
-func TestInput_Head_EOF(t *testing.T) {
+func TestStringInput_Head_EOF(t *testing.T) {
 	in := input.NewString("")
 
 	_, ok := in.Head()
@@ -24,7 +24,7 @@ func TestInput_Head_EOF(t *testing.T) {
 	}
 }
 
-func TestInput_Advance(t *testing.T) {
+func TestStringInput_Advance(t *testing.T) {
 	in := input.NewString("abc")
 	next := in.Advance()
 
@@ -34,7 +34,7 @@ func TestInput_Advance(t *testing.T) {
 	}
 }
 
-func TestInput_IsEOF(t *testing.T) {
+func TestStringInput_IsEOF(t *testing.T) {
 	in := input.NewString("a")
 	if in.IsEOF() {
 		t.Error("IsEOF() on non-empty input should be false")
