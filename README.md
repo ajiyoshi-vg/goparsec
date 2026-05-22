@@ -106,8 +106,9 @@ Option(def, p)       // p, or def if p fails
 ### Transformation
 
 ```go
-Map(p, f)    // apply f to p's result
-Return(v)    // always succeeds with v, consuming nothing
+Map(p, f)      // apply f to p's result
+Return(v)      // always succeeds with v, consuming nothing
+Value(p, v)    // run p (discarding result), return v
 ```
 
 ### Error shaping
