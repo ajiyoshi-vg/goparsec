@@ -173,7 +173,7 @@ got, err := parsec.Run(p, input.NewReaderAt(f))
 
 ## エラー
 
-`*ParseError` は行・列・メッセージを保持します：
+`parsec.ParseError` は行・列・メッセージを保持します：
 
 ```go
 type ParseError struct {
@@ -189,7 +189,7 @@ type ParseError struct {
 ## カスタムパーサの書き方
 
 カスタムパーサは `func(input.Input) (T, input.Input, error)` というシグネチャを持つ関数です。
-`Choice` や `Label` と正しく連携するために、次の 2 つのエラーコンストラクタを使用してください：
+`Choice` や `Label` と正しく連携するために、`parsec` のエラーコンストラクタを使用してください：
 
 ```go
 // ErrNoMatch はアロケーションなしで「ここではマッチしない」を表すセンチネルです。
@@ -210,12 +210,12 @@ func NewErrorf(in input.Input, format string, args ...any) error
 fortyTwo := func(in input.Input) (int, input.Input, error) {
     c, ok := in.Head()
     if !ok || c != '4' {
-        return 0, in, input.ErrNoMatch // ソフト失敗: Choice が次を試みる
+        return 0, in, parsec.ErrNoMatch // ソフト失敗: Choice が次を試みる
     }
     cur := in.Advance()
     c, ok = cur.Head()
     if !ok || c != '2' {
-        return 0, in, input.NewError(cur, "expected '2' after '4'") // ハード失敗
+        return 0, in, parsec.NewError(cur, "expected '2' after '4'") // ハード失敗
     }
     return 42, cur.Advance(), nil
 }

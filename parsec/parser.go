@@ -8,8 +8,8 @@ type Parser[T any] func(input.Input) (T, input.Input, error)
 // Run executes p on in, returning the parsed value (remaining input is ignored).
 func Run[T any](p Parser[T], in input.Input) (T, error) {
 	v, rest, err := p(in)
-	if err == input.ErrNoMatch {
-		err = input.NewError(rest, "no match")
+	if err == ErrNoMatch {
+		err = NewError(rest, "no match")
 	}
 	return v, err
 }
@@ -21,7 +21,7 @@ func RunFull[T any](p Parser[T], in input.Input) (T, error) {
 		return v, err
 	}
 	if !rest.IsEOF() {
-		return v, input.NewError(rest, "unexpected input")
+		return v, NewError(rest, "unexpected input")
 	}
 	return v, nil
 }

@@ -4,14 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
 func TestParseError_lineCol(t *testing.T) {
 	// line 1, col 1: mismatch at start
 	_, err := parsec.RunString(parsec.Char('x'), "abc")
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
@@ -22,7 +21,7 @@ func TestParseError_lineCol(t *testing.T) {
 	// after "hello\n", next position is line 2, col 1
 	p := parsec.Then(parsec.Literal("hello\n"), parsec.Char('x'))
 	_, err = parsec.RunString(p, "hello\nworld")
-	pe, ok = err.(*input.ParseError)
+	pe, ok = err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}

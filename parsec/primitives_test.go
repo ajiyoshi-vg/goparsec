@@ -191,12 +191,12 @@ func TestCustomParser_politeErrors(t *testing.T) {
 	fortyTwo := func(in input.Input) (int, input.Input, error) {
 		c, ok := in.Head()
 		if !ok || c != '4' {
-			return 0, in, input.ErrNoMatch // soft failure: caller may try alternatives
+			return 0, in, parsec.ErrNoMatch // soft failure: caller may try alternatives
 		}
 		cur := in.Advance()
 		c, ok = cur.Head()
 		if !ok || c != '2' {
-			return 0, in, input.NewError(cur, "expected '2' after '4'") // hard failure
+			return 0, in, parsec.NewError(cur, "expected '2' after '4'") // hard failure
 		}
 		return 42, cur.Advance(), nil
 	}
@@ -216,7 +216,7 @@ func TestCustomParser_politeErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for '49'")
 	}
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T: %v", err, err)
 	}
@@ -231,10 +231,10 @@ func TestNewErrorf(t *testing.T) {
 	p := func(in input.Input) (rune, input.Input, error) {
 		c, ok := in.Head()
 		if !ok {
-			return 0, in, input.NewErrorf(in, "expected digit, got EOF")
+			return 0, in, parsec.NewErrorf(in, "expected digit, got EOF")
 		}
 		if c < '0' || c > '9' {
-			return 0, in, input.NewErrorf(in, "expected digit, got %q", c)
+			return 0, in, parsec.NewErrorf(in, "expected digit, got %q", c)
 		}
 		return c, in.Advance(), nil
 	}
@@ -253,7 +253,7 @@ func TestNewErrorf(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T: %v", err, err)
 	}

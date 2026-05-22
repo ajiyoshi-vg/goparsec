@@ -3,7 +3,6 @@ package parsec_test
 import (
 	"testing"
 
-	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
@@ -238,9 +237,9 @@ func TestChoice_furthestError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
-		t.Fatalf("expected *input.ParseError, got %T", err)
+		t.Fatalf("expected *parsec.ParseError, got %T", err)
 	}
 	if pe.Pos != 3 {
 		t.Errorf("want error at pos 3 (furthest reached), got pos %d", pe.Pos)
@@ -328,9 +327,9 @@ func TestLabel(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
-		t.Fatalf("expected *input.ParseError, got %T", err)
+		t.Fatalf("expected *parsec.ParseError, got %T", err)
 	}
 	if pe.Message != "expected digit" {
 		t.Errorf("got message %q, want \"expected digit\"", pe.Message)
@@ -346,7 +345,7 @@ func TestLabel(t *testing.T) {
 func TestLabel_softFail(t *testing.T) {
 	p := parsec.Label(parsec.Digit(), "digit")
 	_, err := parsec.RunString(p, "abc")
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
@@ -364,7 +363,7 @@ func TestLabel_hardFail(t *testing.T) {
 	// String("test") on "tesar": consumes 't','e','s' then fails at col 4.
 	p := parsec.Label(parsec.Literal("test"), "keyword")
 	_, err := parsec.RunString(p, "tesar")
-	pe, ok := err.(*input.ParseError)
+	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}

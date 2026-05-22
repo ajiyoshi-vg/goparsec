@@ -1,10 +1,5 @@
 package input
 
-import (
-	"errors"
-	"fmt"
-)
-
 // Input is the interface that parser input streams must implement.
 // All methods must be pure — implementations should be immutable value types.
 type Input interface {
@@ -61,36 +56,3 @@ func (in stringInput) IsEOF() bool { return in.pos >= len(in.src) }
 func (in stringInput) Pos() int    { return in.pos }
 func (in stringInput) Line() int   { return in.line }
 func (in stringInput) Col() int    { return in.col }
-
-// ParseError records the position and message of a parse failure.
-type ParseError struct {
-	Pos     int // rune offset, used for furthest-error comparison
-	Line    int // 1-based line number
-	Col     int // 1-based column number
-	Message string
-}
-
-func (e *ParseError) Error() string {
-	return fmt.Sprintf("parse error at line %d, col %d: %s", e.Line, e.Col, e.Message)
-}
-
-// ErrNoMatch is the zero-allocation sentinel for a soft failure: the parser did not
-// match at this position and consumed no input. The caller (Choice, Label) is
-// responsible for converting it to a *ParseError when a user-visible message is needed.
-//
-// Custom parsers should return ErrNoMatch when they simply do not match the input
-// at the current position, allowing Choice to try the next alternative without
-// allocating an error object.
-var ErrNoMatch = errors.New("parsec: no match")
-
-// NewError creates a *ParseError at the current position of in with the given message.
-// Custom parsers should use NewError to produce positioned errors that integrate
-// correctly with Choice's furthest-error tracking and Label's message replacement.
-func NewError(in Input, msg string) error {
-	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: msg}
-}
-
-// NewErrorf is like NewError but formats the message using fmt.Sprintf.
-func NewErrorf(in Input, format string, args ...any) error {
-	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: fmt.Sprintf(format, args...)}
-}

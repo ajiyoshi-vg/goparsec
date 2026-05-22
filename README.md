@@ -174,7 +174,7 @@ got, err := parsec.Run(p, input.NewReaderAt(f))
 
 ## Errors
 
-A `*ParseError` carries the line, column, and a message:
+`parsec.ParseError` carries the line, column, and a message:
 
 ```go
 type ParseError struct {
@@ -191,7 +191,7 @@ furthest position in the input.
 ## Writing custom parsers
 
 A custom parser is any function with the signature `func(input.Input) (T, input.Input, error)`.
-Use the two error constructors to integrate correctly with `Choice` and `Label`:
+Use the error constructors from `parsec` to integrate correctly with `Choice` and `Label`:
 
 ```go
 // ErrNoMatch is a zero-allocation sentinel for "did not match here".
@@ -212,12 +212,12 @@ Example — a parser that matches the literal `42`:
 fortyTwo := func(in input.Input) (int, input.Input, error) {
     c, ok := in.Head()
     if !ok || c != '4' {
-        return 0, in, input.ErrNoMatch // soft failure: Choice will try next
+        return 0, in, parsec.ErrNoMatch // soft failure: Choice will try next
     }
     cur := in.Advance()
     c, ok = cur.Head()
     if !ok || c != '2' {
-        return 0, in, input.NewError(cur, "expected '2' after '4'") // hard failure
+        return 0, in, parsec.NewError(cur, "expected '2' after '4'") // hard failure
     }
     return 42, cur.Advance(), nil
 }

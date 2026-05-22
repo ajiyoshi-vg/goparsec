@@ -57,7 +57,7 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 	return func(in input.Input) (T, input.Input, error) {
 		var zero T
 		if len(ps) == 0 {
-			return zero, in, input.NewError(in, "Choice: no alternatives")
+			return zero, in, NewError(in, "Choice: no alternatives")
 		}
 		var bestErr error
 		for _, p := range ps {
@@ -68,8 +68,8 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 			bestErr = furthestError(bestErr, err)
 		}
 		// All alternatives were soft failures with no position info: synthesize a *ParseError.
-		if bestErr == input.ErrNoMatch {
-			return zero, in, input.NewError(in, "no alternatives matched")
+		if bestErr == ErrNoMatch {
+			return zero, in, NewError(in, "no alternatives matched")
 		}
 		return zero, in, bestErr
 	}
@@ -78,14 +78,14 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 // furthestError returns whichever error occurred at the greater input position.
 // ErrNoMatch (soft failure with no position) always loses to a *ParseError.
 func furthestError(a, b error) error {
-	if a == nil || a == input.ErrNoMatch {
+	if a == nil || a == ErrNoMatch {
 		return b
 	}
-	if b == nil || b == input.ErrNoMatch {
+	if b == nil || b == ErrNoMatch {
 		return a
 	}
-	pa, ok1 := a.(*input.ParseError)
-	pb, ok2 := b.(*input.ParseError)
+	pa, ok1 := a.(*ParseError)
+	pb, ok2 := b.(*ParseError)
 	if !ok1 || !ok2 {
 		return b
 	}
@@ -229,7 +229,7 @@ func Integer() Parser[int] {
 		}
 		c, ok := cur.Head()
 		if !ok || c < '0' || c > '9' {
-			return 0, in, input.ErrNoMatch
+			return 0, in, ErrNoMatch
 		}
 		n := int(c - '0')
 		cur = cur.Advance()
@@ -261,7 +261,7 @@ func Float() Parser[float64] {
 
 		c, ok := cur.Head()
 		if !ok || c < '0' || c > '9' {
-			return 0, in, input.ErrNoMatch
+			return 0, in, ErrNoMatch
 		}
 		for ok && c >= '0' && c <= '9' {
 			b.WriteByte(byte(c))
@@ -274,7 +274,7 @@ func Float() Parser[float64] {
 			cur = cur.Advance()
 			c, ok = cur.Head()
 			if !ok || c < '0' || c > '9' {
-				return 0, in, input.NewError(cur, "expected digit after '.'")
+				return 0, in, NewError(cur, "expected digit after '.'")
 			}
 			for ok && c >= '0' && c <= '9' {
 				b.WriteByte(byte(c))
@@ -293,7 +293,7 @@ func Float() Parser[float64] {
 				c, ok = cur.Head()
 			}
 			if !ok || c < '0' || c > '9' {
-				return 0, in, input.NewError(cur, "expected digit in exponent")
+				return 0, in, NewError(cur, "expected digit in exponent")
 			}
 			for ok && c >= '0' && c <= '9' {
 				b.WriteByte(byte(c))
@@ -304,7 +304,7 @@ func Float() Parser[float64] {
 
 		f, err := strconv.ParseFloat(b.String(), 64)
 		if err != nil {
-			return 0, in, input.NewError(in, err.Error())
+			return 0, in, NewError(in, err.Error())
 		}
 		return f, cur, nil
 	}
@@ -319,9 +319,9 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 		if err == nil {
 			c, ok := in.Head()
 			if ok {
-				return struct{}{}, in, input.NewErrorf(in, "unexpected %q", c)
+				return struct{}{}, in, NewErrorf(in, "unexpected %q", c)
 			}
-			return struct{}{}, in, input.NewError(in, "unexpected input")
+			return struct{}{}, in, NewError(in, "unexpected input")
 		}
 		return struct{}{}, in, nil
 	}
@@ -334,9 +334,9 @@ func Label[T any](p Parser[T], label string) Parser[T] {
 		if err == nil {
 			return val, next, nil
 		}
-		if err == input.ErrNoMatch {
+		if err == ErrNoMatch {
 			// Soft failure: no input consumed; replace with the label message.
-			return val, in, input.NewError(in, "expected "+label)
+			return val, in, NewError(in, "expected "+label)
 		}
 		// Hard failure: p consumed input before failing; pass the error through
 		// so callers see the precise failure position, not the start of the label.
@@ -403,7 +403,7 @@ func Natural() Parser[int] {
 	return func(in input.Input) (int, input.Input, error) {
 		c, ok := in.Head()
 		if !ok || c < '0' || c > '9' {
-			return 0, in, input.ErrNoMatch
+			return 0, in, ErrNoMatch
 		}
 		n, cur := int(c-'0'), in.Advance()
 		for {
