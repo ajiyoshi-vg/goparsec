@@ -8,6 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Workflow
 
+### Branching
+
+Always work on a feature branch. Never commit or push directly to `master`.
+Every change must go through a pull request.
+
 ### TDD
 
 Implement using t-wada style TDD: write a failing test first, then make it pass, then refactor. Do not write implementation code without a test driving it.
