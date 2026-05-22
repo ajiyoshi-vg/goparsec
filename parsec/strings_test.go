@@ -10,7 +10,7 @@ import (
 )
 
 func TestManyChars(t *testing.T) {
-	got, err := parsec.Run(parsec.ManyChars(parsec.Letter()), "hello123")
+	got, err := parsec.RunString(parsec.ManyChars(parsec.Letter()), "hello123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestManyChars(t *testing.T) {
 }
 
 func TestManyChars_zero(t *testing.T) {
-	got, err := parsec.Run(parsec.ManyChars(parsec.Letter()), "123")
+	got, err := parsec.RunString(parsec.ManyChars(parsec.Letter()), "123")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestManyChars_zero(t *testing.T) {
 }
 
 func TestMany1Chars(t *testing.T) {
-	got, err := parsec.Run(parsec.Many1Chars(parsec.AlphaNum()), "abc123 rest")
+	got, err := parsec.RunString(parsec.Many1Chars(parsec.AlphaNum()), "abc123 rest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestMany1Chars(t *testing.T) {
 }
 
 func TestMany1Chars_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Many1Chars(parsec.Letter()), "123")
+	_, err := parsec.RunString(parsec.Many1Chars(parsec.Letter()), "123")
 	if err == nil {
 		t.Error("expected error when no match")
 	}
@@ -70,7 +70,7 @@ func TestGoString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := parsec.Run(parsec.GoString(), tt.input)
+		got, err := parsec.RunString(parsec.GoString(), tt.input)
 		if err != nil {
 			t.Errorf("GoString(%q): %v", tt.input, err)
 			continue
@@ -104,7 +104,7 @@ func FuzzGoString(f *testing.F) {
 			return
 		}
 		quoted := strconv.Quote(s)
-		got, err := parsec.Run(parsec.GoString(), quoted)
+		got, err := parsec.RunString(parsec.GoString(), quoted)
 		if err != nil {
 			t.Errorf("GoString(%q): unexpected error: %v", quoted, err)
 			return
@@ -128,7 +128,7 @@ func TestGoString_invalid(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, err := parsec.Run(parsec.GoString(), tt.input)
+		_, err := parsec.RunString(parsec.GoString(), tt.input)
 		if err == nil {
 			t.Errorf("GoString(%s=%q): expected error, got nil", tt.desc, tt.input)
 		}
@@ -159,7 +159,7 @@ func TestJSONString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := parsec.Run(parsec.JSONString(), tt.input)
+		got, err := parsec.RunString(parsec.JSONString(), tt.input)
 		if err != nil {
 			t.Errorf("JSONString(%q): %v", tt.input, err)
 			continue
@@ -185,7 +185,7 @@ func TestJSONString_invalid(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, err := parsec.Run(parsec.JSONString(), tt.input)
+		_, err := parsec.RunString(parsec.JSONString(), tt.input)
 		if err == nil {
 			t.Errorf("JSONString(%s=%q): expected error, got nil", tt.desc, tt.input)
 		}
@@ -219,7 +219,7 @@ func FuzzJSONString(f *testing.F) {
 			t.Fatalf("json.Marshal(%q): %v", s, err)
 		}
 		quoted := string(b)
-		got, err := parsec.Run(parsec.JSONString(), quoted)
+		got, err := parsec.RunString(parsec.JSONString(), quoted)
 		if err != nil {
 			t.Errorf("JSONString(%q): unexpected error: %v", quoted, err)
 			return
@@ -236,9 +236,9 @@ func FuzzJSONString(f *testing.F) {
 func TestGoString_allocs(t *testing.T) {
 	p := parsec.GoString()
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, `"hello"`)
+		parsec.RunString(p, `"hello"`)
 	})
-	// 2 (NewInput) + 7 (Advance per char incl. quotes) + ~2 (Builder buf) = ~11
+	// 2 (NewStringInput) + 7 (Advance per char incl. quotes) + ~2 (Builder buf) = ~11
 	if allocs > 13 {
 		t.Errorf("GoString allocs = %.0f, want ≤13", allocs)
 	}
@@ -248,7 +248,7 @@ func TestGoString_allocs(t *testing.T) {
 func TestJSONString_allocs(t *testing.T) {
 	p := parsec.JSONString()
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, `"hello"`)
+		parsec.RunString(p, `"hello"`)
 	})
 	if allocs > 13 {
 		t.Errorf("JSONString allocs = %.0f, want ≤13", allocs)
@@ -265,7 +265,7 @@ func BenchmarkGoString(b *testing.B) {
 	}
 	for b.Loop() {
 		for _, in := range inputs {
-			parsec.Run(p, in)
+			parsec.RunString(p, in)
 		}
 	}
 }
@@ -280,7 +280,7 @@ func BenchmarkJSONString(b *testing.B) {
 	}
 	for b.Loop() {
 		for _, in := range inputs {
-			parsec.Run(p, in)
+			parsec.RunString(p, in)
 		}
 	}
 }

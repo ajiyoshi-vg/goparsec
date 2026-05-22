@@ -112,7 +112,7 @@ func TestJSON(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := parsec.Run(p, tt.input)
+		got, err := parsec.RunString(p, tt.input)
 		if err != nil {
 			t.Errorf("JSON(%q): %v", tt.input, err)
 			continue
@@ -134,7 +134,7 @@ func TestJSON_invalid(t *testing.T) {
 	}
 
 	for _, input := range inputs {
-		_, err := parsec.Run(p, input)
+		_, err := parsec.RunString(p, input)
 		if err == nil {
 			t.Errorf("JSON(%q): expected error, got nil", input)
 		}
@@ -153,7 +153,7 @@ func BenchmarkJSON(b *testing.B) {
 	}
 	for b.Loop() {
 		for _, in := range inputs {
-			parsec.Run(p, in)
+			parsec.RunString(p, in)
 		}
 	}
 }

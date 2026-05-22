@@ -8,7 +8,7 @@ import (
 )
 
 func TestInput_Head(t *testing.T) {
-	in := parsec.NewInput("abc")
+	in := parsec.NewStringInput("abc")
 
 	c, ok := in.Head()
 	if !ok || c != 'a' {
@@ -17,7 +17,7 @@ func TestInput_Head(t *testing.T) {
 }
 
 func TestInput_Head_EOF(t *testing.T) {
-	in := parsec.NewInput("")
+	in := parsec.NewStringInput("")
 
 	_, ok := in.Head()
 	if ok {
@@ -26,7 +26,7 @@ func TestInput_Head_EOF(t *testing.T) {
 }
 
 func TestInput_Advance(t *testing.T) {
-	in := parsec.NewInput("abc")
+	in := parsec.NewStringInput("abc")
 	next := in.Advance()
 
 	c, ok := next.Head()
@@ -36,7 +36,7 @@ func TestInput_Advance(t *testing.T) {
 }
 
 func TestInput_IsEOF(t *testing.T) {
-	in := parsec.NewInput("a")
+	in := parsec.NewStringInput("a")
 	if in.IsEOF() {
 		t.Error("IsEOF() on non-empty input should be false")
 	}
@@ -49,7 +49,7 @@ func TestInput_IsEOF(t *testing.T) {
 
 func TestParseError_lineCol(t *testing.T) {
 	// line 1, col 1: mismatch at start
-	_, err := parsec.Run(parsec.Char('x'), "abc")
+	_, err := parsec.RunString(parsec.Char('x'), "abc")
 	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
@@ -60,7 +60,7 @@ func TestParseError_lineCol(t *testing.T) {
 
 	// after "hello\n", next position is line 2, col 1
 	p := parsec.Then(parsec.Literal("hello\n"), parsec.Char('x'))
-	_, err = parsec.Run(p, "hello\nworld")
+	_, err = parsec.RunString(p, "hello\nworld")
 	pe, ok = err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)

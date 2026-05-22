@@ -8,7 +8,7 @@ import (
 
 func TestSatisfy_match(t *testing.T) {
 	p := parsec.Satisfy(func(r rune) bool { return r == 'a' })
-	got, err := parsec.Run(p, "abc")
+	got, err := parsec.RunString(p, "abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,7 +19,7 @@ func TestSatisfy_match(t *testing.T) {
 
 func TestSatisfy_noMatch(t *testing.T) {
 	p := parsec.Satisfy(func(r rune) bool { return r == 'a' })
-	_, err := parsec.Run(p, "xyz")
+	_, err := parsec.RunString(p, "xyz")
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -27,14 +27,14 @@ func TestSatisfy_noMatch(t *testing.T) {
 
 func TestSatisfy_EOF(t *testing.T) {
 	p := parsec.Satisfy(func(r rune) bool { return true })
-	_, err := parsec.Run(p, "")
+	_, err := parsec.RunString(p, "")
 	if err == nil {
 		t.Error("expected error on empty input")
 	}
 }
 
 func TestChar(t *testing.T) {
-	got, err := parsec.Run(parsec.Char('h'), "hello")
+	got, err := parsec.RunString(parsec.Char('h'), "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,14 +44,14 @@ func TestChar(t *testing.T) {
 }
 
 func TestChar_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Char('z'), "hello")
+	_, err := parsec.RunString(parsec.Char('z'), "hello")
 	if err == nil {
 		t.Error("expected error")
 	}
 }
 
 func TestLiteral(t *testing.T) {
-	got, err := parsec.Run(parsec.Literal("hello"), "hello world")
+	got, err := parsec.RunString(parsec.Literal("hello"), "hello world")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,28 +61,28 @@ func TestLiteral(t *testing.T) {
 }
 
 func TestString_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Literal("world"), "hello")
+	_, err := parsec.RunString(parsec.Literal("world"), "hello")
 	if err == nil {
 		t.Error("expected error")
 	}
 }
 
 func TestString_partialEOF(t *testing.T) {
-	_, err := parsec.Run(parsec.Literal("hello"), "hel")
+	_, err := parsec.RunString(parsec.Literal("hello"), "hel")
 	if err == nil {
 		t.Error("expected error on short input")
 	}
 }
 
 func TestEOF_success(t *testing.T) {
-	_, err := parsec.Run(parsec.EOF(), "")
+	_, err := parsec.RunString(parsec.EOF(), "")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestEOF_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.EOF(), "a")
+	_, err := parsec.RunString(parsec.EOF(), "a")
 	if err == nil {
 		t.Error("expected error when input remains")
 	}
@@ -90,7 +90,7 @@ func TestEOF_fail(t *testing.T) {
 
 func TestDigit(t *testing.T) {
 	for _, c := range "0123456789" {
-		got, err := parsec.Run(parsec.Digit(), string(c))
+		got, err := parsec.RunString(parsec.Digit(), string(c))
 		if err != nil {
 			t.Fatalf("Digit(%q): %v", c, err)
 		}
@@ -101,7 +101,7 @@ func TestDigit(t *testing.T) {
 }
 
 func TestDigit_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Digit(), "a")
+	_, err := parsec.RunString(parsec.Digit(), "a")
 	if err == nil {
 		t.Error("expected error for non-digit")
 	}
@@ -109,7 +109,7 @@ func TestDigit_fail(t *testing.T) {
 
 func TestLetter(t *testing.T) {
 	for _, c := range "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" {
-		got, err := parsec.Run(parsec.Letter(), string(c))
+		got, err := parsec.RunString(parsec.Letter(), string(c))
 		if err != nil {
 			t.Fatalf("Letter(%q): %v", c, err)
 		}
@@ -120,7 +120,7 @@ func TestLetter(t *testing.T) {
 }
 
 func TestLetter_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Letter(), "1")
+	_, err := parsec.RunString(parsec.Letter(), "1")
 	if err == nil {
 		t.Error("expected error for non-letter")
 	}
@@ -128,7 +128,7 @@ func TestLetter_fail(t *testing.T) {
 
 func TestAlphaNum(t *testing.T) {
 	for _, c := range "abcXYZ019" {
-		got, err := parsec.Run(parsec.AlphaNum(), string(c))
+		got, err := parsec.RunString(parsec.AlphaNum(), string(c))
 		if err != nil {
 			t.Fatalf("AlphaNum(%q): %v", c, err)
 		}
@@ -140,7 +140,7 @@ func TestAlphaNum(t *testing.T) {
 
 func TestAlphaNum_fail(t *testing.T) {
 	for _, c := range "_ !@" {
-		_, err := parsec.Run(parsec.AlphaNum(), string(c))
+		_, err := parsec.RunString(parsec.AlphaNum(), string(c))
 		if err == nil {
 			t.Errorf("AlphaNum(%q): expected error", c)
 		}
@@ -149,7 +149,7 @@ func TestAlphaNum_fail(t *testing.T) {
 
 func TestHexDigit(t *testing.T) {
 	for _, c := range "0123456789abcdefABCDEF" {
-		got, err := parsec.Run(parsec.HexDigit(), string(c))
+		got, err := parsec.RunString(parsec.HexDigit(), string(c))
 		if err != nil {
 			t.Fatalf("HexDigit(%q): %v", c, err)
 		}
@@ -161,22 +161,22 @@ func TestHexDigit(t *testing.T) {
 
 func TestHexDigit_fail(t *testing.T) {
 	for _, c := range "ghGH_z" {
-		_, err := parsec.Run(parsec.HexDigit(), string(c))
+		_, err := parsec.RunString(parsec.HexDigit(), string(c))
 		if err == nil {
 			t.Errorf("HexDigit(%q): expected error", c)
 		}
 	}
 }
 
-func TestRunFull_success(t *testing.T) {
-	_, err := parsec.RunFull(parsec.Char('a'), "a")
+func TestRunStringFull_success(t *testing.T) {
+	_, err := parsec.RunStringFull(parsec.Char('a'), "a")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestRunFull_extraInput(t *testing.T) {
-	_, err := parsec.RunFull(parsec.Char('a'), "ab")
+func TestRunStringFull_extraInput(t *testing.T) {
+	_, err := parsec.RunStringFull(parsec.Char('a'), "ab")
 	if err == nil {
 		t.Error("expected error when input not fully consumed")
 	}
@@ -202,7 +202,7 @@ func TestCustomParser_politeErrors(t *testing.T) {
 
 	// ErrNoMatch lets Choice fall through to the next alternative.
 	p := parsec.Choice(parsec.Parser[int](fortyTwo), parsec.Natural())
-	got, err := parsec.Run(p, "99")
+	got, err := parsec.RunString(p, "99")
 	if err != nil {
 		t.Fatalf("Choice fallthrough: unexpected error: %v", err)
 	}
@@ -211,7 +211,7 @@ func TestCustomParser_politeErrors(t *testing.T) {
 	}
 
 	// Hard failure from NewError propagates with correct position.
-	_, err = parsec.Run(parsec.Parser[int](fortyTwo), "49")
+	_, err = parsec.RunString(parsec.Parser[int](fortyTwo), "49")
 	if err == nil {
 		t.Fatal("expected error for '49'")
 	}
@@ -239,7 +239,7 @@ func TestNewErrorf(t *testing.T) {
 	}
 
 	// Success path unchanged.
-	got, err := parsec.Run(parsec.Parser[rune](p), "5abc")
+	got, err := parsec.RunString(parsec.Parser[rune](p), "5abc")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -248,7 +248,7 @@ func TestNewErrorf(t *testing.T) {
 	}
 
 	// Failure: formatted message and correct position.
-	_, err = parsec.Run(parsec.Parser[rune](p), "abc")
+	_, err = parsec.RunString(parsec.Parser[rune](p), "abc")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -266,14 +266,14 @@ func TestNewErrorf(t *testing.T) {
 
 // TestChoice_allocsOnSoftFail verifies that failed alternatives in Choice
 // do not allocate heap objects (*ParseError).
-// The minimum unavoidable allocs are 3: []rune (NewInput), stringInput interface
-// boxing (NewInput), and stringInput interface boxing (Advance on success).
+// The minimum unavoidable allocs are 3: []rune (NewStringInput), stringInput interface
+// boxing (NewStringInput), and stringInput interface boxing (Advance on success).
 func TestChoice_allocsOnSoftFail(t *testing.T) {
 	p := parsec.Choice(parsec.Char('+'), parsec.Char('-'), parsec.Char('*'), parsec.Char('/'))
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, "/") // last alternative matches; 3 alternatives fail first
+		parsec.RunString(p, "/") // last alternative matches; 3 alternatives fail first
 	})
-	// 3 = minimum with immutable Input (NewInput×2 + Advance×1).
+	// 3 = minimum with immutable Input (NewStringInput×2 + Advance×1).
 	// Before this optimization: 9 allocs (3 failing *ParseError × 2 each via fmt.Sprintf).
 	if allocs > 3 {
 		t.Errorf("Choice soft-fail allocs = %.0f, want ≤3", allocs)
@@ -283,20 +283,20 @@ func TestChoice_allocsOnSoftFail(t *testing.T) {
 func BenchmarkChar(b *testing.B) {
 	p := parsec.Char('a')
 	for b.Loop() {
-		parsec.Run(p, "abc")
+		parsec.RunString(p, "abc")
 	}
 }
 
 func BenchmarkSatisfy(b *testing.B) {
 	p := parsec.Satisfy(func(r rune) bool { return r >= 'a' && r <= 'z' })
 	for b.Loop() {
-		parsec.Run(p, "hello")
+		parsec.RunString(p, "hello")
 	}
 }
 
 func BenchmarkLiteral(b *testing.B) {
 	p := parsec.Literal("hello")
 	for b.Loop() {
-		parsec.Run(p, "hello world")
+		parsec.RunString(p, "hello world")
 	}
 }

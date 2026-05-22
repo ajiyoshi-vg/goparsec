@@ -78,7 +78,7 @@ func TestExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := parsec.RunFull(expr, tt.input)
+		got, err := parsec.RunStringFull(expr, tt.input)
 		if err != nil {
 			t.Errorf("Expr(%q): %v", tt.input, err)
 			continue
@@ -100,7 +100,7 @@ func BenchmarkExpr(b *testing.B) {
 	}
 	for b.Loop() {
 		for _, in := range inputs {
-			parsec.RunFull(expr, in)
+			parsec.RunStringFull(expr, in)
 		}
 	}
 }
