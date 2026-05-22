@@ -182,6 +182,48 @@ func TestRunFull_extraInput(t *testing.T) {
 	}
 }
 
+// TestCustomParser_politeErrors verifies that user-written custom parsers can
+// use ErrNoMatch for soft failures and NewError for positioned hard failures,
+// and that these interact correctly with Choice and error reporting.
+func TestCustomParser_politeErrors(t *testing.T) {
+	// Custom parser: matches "42", returns ErrNoMatch on any other input.
+	fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
+		c, ok := in.Head()
+		if !ok || c != '4' {
+			return 0, in, parsec.ErrNoMatch // soft failure: caller may try alternatives
+		}
+		cur := in.Advance()
+		c, ok = cur.Head()
+		if !ok || c != '2' {
+			return 0, in, parsec.NewError(cur, "expected '2' after '4'") // hard failure
+		}
+		return 42, cur.Advance(), nil
+	}
+
+	// ErrNoMatch lets Choice fall through to the next alternative.
+	p := parsec.Choice(parsec.Parser[int](fortyTwo), parsec.Natural())
+	got, err := parsec.Run(p, "99")
+	if err != nil {
+		t.Fatalf("Choice fallthrough: unexpected error: %v", err)
+	}
+	if got != 99 {
+		t.Errorf("Choice fallthrough: got %d, want 99", got)
+	}
+
+	// Hard failure from NewError propagates with correct position.
+	_, err = parsec.Run(parsec.Parser[int](fortyTwo), "49")
+	if err == nil {
+		t.Fatal("expected error for '49'")
+	}
+	pe, ok := err.(*parsec.ParseError)
+	if !ok {
+		t.Fatalf("expected *ParseError, got %T: %v", err, err)
+	}
+	if pe.Col != 2 {
+		t.Errorf("error col = %d, want 2 (position of failed '2')", pe.Col)
+	}
+}
+
 // TestChoice_allocsOnSoftFail verifies that failed alternatives in Choice
 // do not allocate heap objects (*ParseError).
 // The minimum unavoidable allocs are 3: []rune (NewInput), stringInput interface
