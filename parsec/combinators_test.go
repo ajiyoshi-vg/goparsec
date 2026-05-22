@@ -545,6 +545,19 @@ func TestInteger_allocs(t *testing.T) {
 	}
 }
 
+// TestFloat_allocs verifies that Float uses no intermediate string concatenations.
+// A direct implementation (like Natural/Integer) should avoid the Bind-chain overhead.
+func TestFloat_allocs(t *testing.T) {
+	p := parsec.Float()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "-3.14e+10")
+	})
+	// 2 (NewInput) + 9 (Advance per char) + ~3 (strings.Builder buf growth) = ~14
+	if allocs > 16 {
+		t.Errorf("Float allocs = %.0f, want ≤16", allocs)
+	}
+}
+
 func BenchmarkNatural(b *testing.B) {
 	p := parsec.Natural()
 	for b.Loop() {
