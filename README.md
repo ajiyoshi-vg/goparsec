@@ -106,9 +106,12 @@ Option(def, p)       // p, or def if p fails
 ### Transformation
 
 ```go
-Map(p, f)      // apply f to p's result
-Return(v)      // always succeeds with v, consuming nothing
-Value(p, v)    // run p (discarding result), return v
+Map(p, f)              // apply f to p's result
+Map2(p1, p2, f)        // run p1 and p2 in sequence, apply f to both results
+Map3(p1, p2, p3, f)    // run three parsers in sequence, apply f to all results
+Map4(p1, p2, p3, p4, f)
+Return(v)              // always succeeds with v, consuming nothing
+Value(p, v)            // run p (discarding result), return v
 ```
 
 ### Error shaping
