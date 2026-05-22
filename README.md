@@ -26,7 +26,7 @@ import (
 
 func main() {
     p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
-    got, err := parsec.Run(p, "1,2,3")
+    got, err := parsec.RunString(p, "1,2,3")
     fmt.Println(got, err) // [1 2 3] <nil>
 }
 ```
@@ -47,11 +47,15 @@ needs to be rolled back.
 ### Running a parser
 
 ```go
-// Run parses s; remaining input after p is ignored.
-func Run[T any](p Parser[T], s string) (T, error)
+// Run executes p on in; remaining input is ignored.
+func Run[T any](p Parser[T], in Input) (T, error)
 
-// RunFull parses s and fails if any input remains.
-func RunFull[T any](p Parser[T], s string) (T, error)
+// RunFull executes p on in and fails if any input remains.
+func RunFull[T any](p Parser[T], in Input) (T, error)
+
+// RunString and RunStringFull are shorthands for the common case of a string input.
+func RunString[T any](p Parser[T], s string) (T, error)
+func RunStringFull[T any](p Parser[T], s string) (T, error)
 ```
 
 ## Primitives
@@ -141,32 +145,32 @@ JSONString() Parser[string]
 
 ## Input sources
 
-By default, parsers run on a `string`:
+Two input constructors are provided:
 
 ```go
-parsec.Run(p, "input string")
-parsec.RunFull(p, "input string")
-```
+// NewStringInput wraps a string as an Input (pre-allocates a []rune slice).
+func NewStringInput(s string) Input
 
-To parse from an `io.ReaderAt` (e.g. `*os.File`, `*strings.Reader`, `*bytes.Reader`) without loading the entire contents into a `[]rune` buffer:
-
-```go
 // NewReaderAtInput returns an Input backed by r.
 // Content is read on demand — no rune buffer is allocated.
 // The underlying r must remain valid for the duration of parsing.
 func NewReaderAtInput(r io.ReaderAt) Input
 ```
 
-Example:
+For the common case of parsing a string, use the `RunString`/`RunStringFull` shorthands.
+For any `Input` (including `NewReaderAtInput`), use `Run`/`RunFull` directly:
 
 ```go
+// String shorthand
+got, err := parsec.RunString(p, "1,2,3")
+
+// io.ReaderAt source
 f, _ := os.Open("data.txt")
 defer f.Close()
-in := parsec.NewReaderAtInput(f)
-got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
+got, err := parsec.Run(p, parsec.NewReaderAtInput(f))
 ```
 
-`stringInput` (used by `Run`/`RunFull`) allocates a single `[]rune` slice upfront and never reads from disk. `readerInput` trades per-character I/O for O(parser-stack-depth) memory — useful for large files where you do not want to buffer the entire content.
+`NewStringInput` pre-allocates a single `[]rune` slice and never reads from disk. `NewReaderAtInput` trades per-character I/O for O(parser-stack-depth) memory — useful for large files where you do not want to buffer the entire content.
 
 ## Errors
 
@@ -219,7 +223,7 @@ fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
 }
 
 p := parsec.Choice(parsec.Parser[int](fortyTwo), parsec.Natural())
-got, _ := parsec.Run(p, "99") // → 99 (fortyTwo returns ErrNoMatch, Choice falls through)
+got, _ := parsec.RunString(p, "99") // → 99 (fortyTwo returns ErrNoMatch, Choice falls through)
 ```
 
 ## Example: expression parser
@@ -259,7 +263,7 @@ func buildExpr() parsec.Parser[int] {
     return expr
 }
 
-got, _ := parsec.RunFull(buildExpr(), "(1 + 2) * -3") // → -9
+got, _ := parsec.RunStringFull(buildExpr(), "(1 + 2) * -3") // → -9
 ```
 
 ## License

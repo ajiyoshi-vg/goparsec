@@ -7,7 +7,7 @@ import (
 )
 
 func TestMany_zero(t *testing.T) {
-	got, err := parsec.Run(parsec.Many(parsec.Char('a')), "bbb")
+	got, err := parsec.RunString(parsec.Many(parsec.Char('a')), "bbb")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +20,7 @@ func TestMany_zero(t *testing.T) {
 }
 
 func TestMany_multiple(t *testing.T) {
-	got, err := parsec.Run(parsec.Many(parsec.Char('a')), "aaab")
+	got, err := parsec.RunString(parsec.Many(parsec.Char('a')), "aaab")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestMany_multiple(t *testing.T) {
 }
 
 func TestMany1_one(t *testing.T) {
-	got, err := parsec.Run(parsec.Many1(parsec.Digit()), "1abc")
+	got, err := parsec.RunString(parsec.Many1(parsec.Digit()), "1abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestMany1_one(t *testing.T) {
 }
 
 func TestMany1_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Many1(parsec.Digit()), "abc")
+	_, err := parsec.RunString(parsec.Many1(parsec.Digit()), "abc")
 	if err == nil {
 		t.Error("expected error when no match")
 	}
@@ -48,7 +48,7 @@ func TestMany1_fail(t *testing.T) {
 
 func TestChoice_first(t *testing.T) {
 	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
-	got, err := parsec.Run(p, "apple")
+	got, err := parsec.RunString(p, "apple")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestChoice_first(t *testing.T) {
 
 func TestChoice_second(t *testing.T) {
 	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
-	got, err := parsec.Run(p, "banana")
+	got, err := parsec.RunString(p, "banana")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,14 +70,14 @@ func TestChoice_second(t *testing.T) {
 
 func TestChoice_fail(t *testing.T) {
 	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'))
-	_, err := parsec.Run(p, "xyz")
+	_, err := parsec.RunString(p, "xyz")
 	if err == nil {
 		t.Error("expected error")
 	}
 }
 
 func TestOption_present(t *testing.T) {
-	got, err := parsec.Run(parsec.Option('_', parsec.Char('a')), "abc")
+	got, err := parsec.RunString(parsec.Option('_', parsec.Char('a')), "abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestOption_present(t *testing.T) {
 }
 
 func TestOption_absent(t *testing.T) {
-	got, err := parsec.Run(parsec.Option('_', parsec.Char('a')), "xyz")
+	got, err := parsec.RunString(parsec.Option('_', parsec.Char('a')), "xyz")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestOption_absent(t *testing.T) {
 }
 
 func TestReturn(t *testing.T) {
-	got, err := parsec.Run(parsec.Return(42), "anything")
+	got, err := parsec.RunString(parsec.Return(42), "anything")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestReturn(t *testing.T) {
 	}
 	// must not consume input
 	p := parsec.Then(parsec.Return("prefix"), parsec.Literal("hello"))
-	s, err := parsec.Run(p, "hello")
+	s, err := parsec.RunString(p, "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestReturn(t *testing.T) {
 
 func TestMap(t *testing.T) {
 	p := parsec.Map(parsec.Digit(), func(r rune) int { return int(r - '0') })
-	got, err := parsec.Run(p, "7abc")
+	got, err := parsec.RunString(p, "7abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestBind(t *testing.T) {
 	p := parsec.Bind(parsec.Natural(), func(n int) parsec.Parser[[]rune] {
 		return parsec.Count(n, parsec.Char('a'))
 	})
-	got, err := parsec.Run(p, "3aaa")
+	got, err := parsec.RunString(p, "3aaa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestBind(t *testing.T) {
 
 func TestThen(t *testing.T) {
 	p := parsec.Then(parsec.Char('('), parsec.Digit())
-	got, err := parsec.Run(p, "(5")
+	got, err := parsec.RunString(p, "(5")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestThen(t *testing.T) {
 
 func TestSkip(t *testing.T) {
 	p := parsec.Skip(parsec.Digit(), parsec.Char(';'))
-	got, err := parsec.Run(p, "3;")
+	got, err := parsec.RunString(p, "3;")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestSkip(t *testing.T) {
 
 func TestBetween(t *testing.T) {
 	p := parsec.Between(parsec.Char('('), parsec.Digit(), parsec.Char(')'))
-	got, err := parsec.Run(p, "(5)")
+	got, err := parsec.RunString(p, "(5)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ func TestBetween(t *testing.T) {
 
 func TestSepBy_zero(t *testing.T) {
 	p := parsec.SepBy(parsec.Digit(), parsec.Char(','))
-	got, err := parsec.Run(p, "abc")
+	got, err := parsec.RunString(p, "abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func TestSepBy_zero(t *testing.T) {
 
 func TestSepBy_one(t *testing.T) {
 	p := parsec.SepBy(parsec.Digit(), parsec.Char(','))
-	got, err := parsec.Run(p, "3,")
+	got, err := parsec.RunString(p, "3,")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestSepBy_one(t *testing.T) {
 
 func TestSepBy_multiple(t *testing.T) {
 	p := parsec.SepBy(parsec.Digit(), parsec.Char(','))
-	got, err := parsec.Run(p, "1,2,3")
+	got, err := parsec.RunString(p, "1,2,3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestSepBy_multiple(t *testing.T) {
 }
 
 func TestSpaces(t *testing.T) {
-	got, err := parsec.Run(parsec.Spaces(), "   hello")
+	got, err := parsec.RunString(parsec.Spaces(), "   hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,14 +226,14 @@ func TestMany_nonConsuming_panics(t *testing.T) {
 		}
 	}()
 	// Return always succeeds without consuming input — the clearest trigger for this panic
-	parsec.Run(parsec.Many(parsec.Return('x')), "bbb")
+	parsec.RunString(parsec.Many(parsec.Return('x')), "bbb")
 }
 
 func TestChoice_furthestError(t *testing.T) {
 	// "test" reaches pos 3, "true" reaches pos 1 on "tesar"
 	// should report the furthest position regardless of parser order
 	p := parsec.Choice(parsec.Literal("test"), parsec.Literal("true"))
-	_, err := parsec.Run(p, "tesar")
+	_, err := parsec.RunString(p, "tesar")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -248,7 +248,7 @@ func TestChoice_furthestError(t *testing.T) {
 
 func TestChainl1_single(t *testing.T) {
 	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
-	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1")
+	got, err := parsec.RunString(parsec.Chainl1(parsec.Natural(), addOp), "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func TestChainl1_single(t *testing.T) {
 
 func TestChainl1_multiple(t *testing.T) {
 	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
-	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "1+2+3")
+	got, err := parsec.RunString(parsec.Chainl1(parsec.Natural(), addOp), "1+2+3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func TestChainl1_multiple(t *testing.T) {
 
 func TestChainl1_leftAssoc(t *testing.T) {
 	divOp := parsec.Map(parsec.Char('/'), func(rune) func(int, int) int { return div })
-	got, err := parsec.Run(parsec.Chainl1(parsec.Natural(), divOp), "12/3/2")
+	got, err := parsec.RunString(parsec.Chainl1(parsec.Natural(), divOp), "12/3/2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -281,7 +281,7 @@ func TestChainl1_leftAssoc(t *testing.T) {
 
 func TestChainl1_fail(t *testing.T) {
 	addOp := parsec.Map(parsec.Char('+'), func(rune) func(int, int) int { return add })
-	_, err := parsec.Run(parsec.Chainl1(parsec.Natural(), addOp), "abc")
+	_, err := parsec.RunString(parsec.Chainl1(parsec.Natural(), addOp), "abc")
 	if err == nil {
 		t.Error("expected error when p doesn't match")
 	}
@@ -298,7 +298,7 @@ func intPow(base, exp int) int {
 func TestNotFollowedBy_success(t *testing.T) {
 	// "if" followed by space: OK as keyword
 	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
-	_, err := parsec.Run(p, "if ")
+	_, err := parsec.RunString(p, "if ")
 	if err != nil {
 		t.Fatalf("expected success: %v", err)
 	}
@@ -306,7 +306,7 @@ func TestNotFollowedBy_success(t *testing.T) {
 
 func TestNotFollowedBy_atEOF(t *testing.T) {
 	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
-	_, err := parsec.Run(p, "if")
+	_, err := parsec.RunString(p, "if")
 	if err != nil {
 		t.Fatalf("expected success at EOF: %v", err)
 	}
@@ -315,7 +315,7 @@ func TestNotFollowedBy_atEOF(t *testing.T) {
 func TestNotFollowedBy_fail(t *testing.T) {
 	// "ifs" must not match keyword "if"
 	p := parsec.Then(parsec.Literal("if"), parsec.NotFollowedBy(parsec.AlphaNum()))
-	_, err := parsec.Run(p, "ifs")
+	_, err := parsec.RunString(p, "ifs")
 	if err == nil {
 		t.Error("expected failure: 'ifs' should not match keyword 'if'")
 	}
@@ -323,7 +323,7 @@ func TestNotFollowedBy_fail(t *testing.T) {
 
 func TestLabel(t *testing.T) {
 	p := parsec.Label(parsec.Digit(), "digit")
-	_, err := parsec.Run(p, "abc")
+	_, err := parsec.RunString(p, "abc")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -344,7 +344,7 @@ func TestLabel(t *testing.T) {
 // with the label message at the starting position.
 func TestLabel_softFail(t *testing.T) {
 	p := parsec.Label(parsec.Digit(), "digit")
-	_, err := parsec.Run(p, "abc")
+	_, err := parsec.RunString(p, "abc")
 	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
@@ -362,7 +362,7 @@ func TestLabel_softFail(t *testing.T) {
 func TestLabel_hardFail(t *testing.T) {
 	// String("test") on "tesar": consumes 't','e','s' then fails at col 4.
 	p := parsec.Label(parsec.Literal("test"), "keyword")
-	_, err := parsec.Run(p, "tesar")
+	_, err := parsec.RunString(p, "tesar")
 	pe, ok := err.(*parsec.ParseError)
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
@@ -373,7 +373,7 @@ func TestLabel_hardFail(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-	got, err := parsec.Run(parsec.Count(3, parsec.Digit()), "123abc")
+	got, err := parsec.RunString(parsec.Count(3, parsec.Digit()), "123abc")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,7 +383,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestCount_tooFew(t *testing.T) {
-	_, err := parsec.Run(parsec.Count(4, parsec.Digit()), "123abc")
+	_, err := parsec.RunString(parsec.Count(4, parsec.Digit()), "123abc")
 	if err == nil {
 		t.Error("expected error: not enough matches")
 	}
@@ -391,7 +391,7 @@ func TestCount_tooFew(t *testing.T) {
 
 func TestManyTill(t *testing.T) {
 	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
-	got, err := parsec.Run(p, "hello*/world")
+	got, err := parsec.RunString(p, "hello*/world")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,7 +402,7 @@ func TestManyTill(t *testing.T) {
 
 func TestManyTill_empty(t *testing.T) {
 	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
-	got, err := parsec.Run(p, "*/rest")
+	got, err := parsec.RunString(p, "*/rest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,11 +420,11 @@ func TestManyTill_nonConsuming_panics(t *testing.T) {
 			t.Error("expected panic: ManyTill with non-consuming body causes infinite loop")
 		}
 	}()
-	parsec.Run(parsec.ManyTill(parsec.Return('x'), parsec.Literal("*/")), "hello*/")
+	parsec.RunString(parsec.ManyTill(parsec.Return('x'), parsec.Literal("*/")), "hello*/")
 }
 
 func TestChoice_noArgs_fails(t *testing.T) {
-	_, err := parsec.Run(parsec.Choice[rune](), "a")
+	_, err := parsec.RunString(parsec.Choice[rune](), "a")
 	if err == nil {
 		t.Error("Choice with no parsers should fail, not succeed with zero value")
 	}
@@ -432,7 +432,7 @@ func TestChoice_noArgs_fails(t *testing.T) {
 
 func TestManyTill_noEnd(t *testing.T) {
 	p := parsec.ManyTill(parsec.AnyChar(), parsec.Literal("*/"))
-	_, err := parsec.Run(p, "hello world")
+	_, err := parsec.RunString(p, "hello world")
 	if err == nil {
 		t.Error("expected error when end delimiter not found")
 	}
@@ -440,7 +440,7 @@ func TestManyTill_noEnd(t *testing.T) {
 
 func TestChainr1_single(t *testing.T) {
 	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
-	got, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "4")
+	got, err := parsec.RunString(parsec.Chainr1(parsec.Natural(), powOp), "4")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -452,7 +452,7 @@ func TestChainr1_single(t *testing.T) {
 func TestChainr1_rightAssoc(t *testing.T) {
 	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
 	// 2^3^2 = 2^(3^2) = 2^9 = 512, not (2^3)^2 = 64
-	got, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "2^3^2")
+	got, err := parsec.RunString(parsec.Chainr1(parsec.Natural(), powOp), "2^3^2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +463,7 @@ func TestChainr1_rightAssoc(t *testing.T) {
 
 func TestChainr1_fail(t *testing.T) {
 	powOp := parsec.Map(parsec.Char('^'), func(rune) func(int, int) int { return intPow })
-	_, err := parsec.Run(parsec.Chainr1(parsec.Natural(), powOp), "abc")
+	_, err := parsec.RunString(parsec.Chainr1(parsec.Natural(), powOp), "abc")
 	if err == nil {
 		t.Error("expected error when p doesn't match")
 	}
@@ -481,7 +481,7 @@ func TestInteger(t *testing.T) {
 		{"123abc", 123},
 	}
 	for _, tt := range tests {
-		got, err := parsec.Run(parsec.Integer(), tt.input)
+		got, err := parsec.RunString(parsec.Integer(), tt.input)
 		if err != nil {
 			t.Fatalf("Integer(%q): %v", tt.input, err)
 		}
@@ -492,7 +492,7 @@ func TestInteger(t *testing.T) {
 }
 
 func TestInteger_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Integer(), "abc")
+	_, err := parsec.RunString(parsec.Integer(), "abc")
 	if err == nil {
 		t.Error("expected error for non-integer input")
 	}
@@ -508,7 +508,7 @@ func TestNatural(t *testing.T) {
 		{"123abc", 123},
 	}
 	for _, tt := range tests {
-		got, err := parsec.Run(parsec.Natural(), tt.input)
+		got, err := parsec.RunString(parsec.Natural(), tt.input)
 		if err != nil {
 			t.Fatalf("Natural(%q): %v", tt.input, err)
 		}
@@ -534,7 +534,7 @@ func TestFloat(t *testing.T) {
 		{"-1.23e5", -1.23e5},
 	}
 	for _, tt := range tests {
-		got, err := parsec.Run(parsec.Float(), tt.input)
+		got, err := parsec.RunString(parsec.Float(), tt.input)
 		if err != nil {
 			t.Fatalf("Float(%q): %v", tt.input, err)
 		}
@@ -545,20 +545,20 @@ func TestFloat(t *testing.T) {
 }
 
 func TestFloat_fail(t *testing.T) {
-	_, err := parsec.Run(parsec.Float(), "abc")
+	_, err := parsec.RunString(parsec.Float(), "abc")
 	if err == nil {
 		t.Error("expected error for non-float input")
 	}
 }
 
 // TestNatural_allocs verifies that Natural does not allocate for intermediate
-// digit slices. Only NewInput (2) and one Advance per digit should allocate.
+// digit slices. Only NewStringInput (2) and one Advance per digit should allocate.
 func TestNatural_allocs(t *testing.T) {
 	p := parsec.Natural()
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, "12345")
+		parsec.RunString(p, "12345")
 	})
-	// 2 (NewInput) + 5 (Advance per digit) + 1 (EOF newError) = 8 max
+	// 2 (NewStringInput) + 5 (Advance per digit) + 1 (EOF newError) = 8 max
 	if allocs > 8 {
 		t.Errorf("Natural allocs = %.0f, want ≤8", allocs)
 	}
@@ -569,9 +569,9 @@ func TestNatural_allocs(t *testing.T) {
 func TestInteger_allocs(t *testing.T) {
 	p := parsec.Integer()
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, "-12345")
+		parsec.RunString(p, "-12345")
 	})
-	// 2 (NewInput) + 6 (Advance: '-' + 5 digits) + 1 (EOF newError) = 9 max
+	// 2 (NewStringInput) + 6 (Advance: '-' + 5 digits) + 1 (EOF newError) = 9 max
 	if allocs > 9 {
 		t.Errorf("Integer allocs = %.0f, want ≤9", allocs)
 	}
@@ -582,9 +582,9 @@ func TestInteger_allocs(t *testing.T) {
 func TestFloat_allocs(t *testing.T) {
 	p := parsec.Float()
 	allocs := testing.AllocsPerRun(100, func() {
-		parsec.Run(p, "-3.14e+10")
+		parsec.RunString(p, "-3.14e+10")
 	})
-	// 2 (NewInput) + 9 (Advance per char) + ~3 (strings.Builder buf growth) = ~14
+	// 2 (NewStringInput) + 9 (Advance per char) + ~3 (strings.Builder buf growth) = ~14
 	if allocs > 16 {
 		t.Errorf("Float allocs = %.0f, want ≤16", allocs)
 	}
@@ -593,48 +593,48 @@ func TestFloat_allocs(t *testing.T) {
 func BenchmarkNatural(b *testing.B) {
 	p := parsec.Natural()
 	for b.Loop() {
-		parsec.Run(p, "12345")
+		parsec.RunString(p, "12345")
 	}
 }
 
 func BenchmarkInteger(b *testing.B) {
 	p := parsec.Integer()
 	for b.Loop() {
-		parsec.Run(p, "-12345")
+		parsec.RunString(p, "-12345")
 	}
 }
 
 func BenchmarkFloat(b *testing.B) {
 	p := parsec.Float()
 	for b.Loop() {
-		parsec.Run(p, "-3.14e+10")
+		parsec.RunString(p, "-3.14e+10")
 	}
 }
 
 func BenchmarkMany(b *testing.B) {
 	p := parsec.Many(parsec.Digit())
 	for b.Loop() {
-		parsec.Run(p, "1234567890")
+		parsec.RunString(p, "1234567890")
 	}
 }
 
 func BenchmarkChoice_first(b *testing.B) {
 	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
 	for b.Loop() {
-		parsec.Run(p, "abc")
+		parsec.RunString(p, "abc")
 	}
 }
 
 func BenchmarkChoice_last(b *testing.B) {
 	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
 	for b.Loop() {
-		parsec.Run(p, "cba")
+		parsec.RunString(p, "cba")
 	}
 }
 
 func BenchmarkSepBy(b *testing.B) {
 	p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
 	for b.Loop() {
-		parsec.Run(p, "1,2,3,4,5")
+		parsec.RunString(p, "1,2,3,4,5")
 	}
 }

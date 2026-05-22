@@ -30,8 +30,8 @@ type stringInput struct {
 	col  int
 }
 
-// NewInput returns an Input over the given string.
-func NewInput(s string) Input {
+// NewStringInput returns an Input over the given string.
+func NewStringInput(s string) Input {
 	return stringInput{src: []rune(s), line: 1, col: 1}
 }
 

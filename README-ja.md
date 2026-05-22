@@ -26,7 +26,7 @@ import (
 
 func main() {
     p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
-    got, err := parsec.Run(p, "1,2,3")
+    got, err := parsec.RunString(p, "1,2,3")
     fmt.Println(got, err) // [1 2 3] <nil>
 }
 ```
@@ -46,11 +46,15 @@ type Parser[T any] func(Input) (T, Input, error)
 ### パーサの実行
 
 ```go
-// Run は p で s を解析します。p が消費しなかった残りの入力は無視されます。
-func Run[T any](p Parser[T], s string) (T, error)
+// Run は p で in を解析します。残りの入力は無視されます。
+func Run[T any](p Parser[T], in Input) (T, error)
 
-// RunFull は p で s を解析し、入力が残っていた場合は失敗します。
-func RunFull[T any](p Parser[T], s string) (T, error)
+// RunFull は p で in を解析し、入力が残っていた場合は失敗します。
+func RunFull[T any](p Parser[T], in Input) (T, error)
+
+// RunString・RunStringFull は文字列入力のよく使われる省略形です。
+func RunString[T any](p Parser[T], s string) (T, error)
+func RunStringFull[T any](p Parser[T], s string) (T, error)
 ```
 
 ## プリミティブ
@@ -140,32 +144,32 @@ JSONString() Parser[string]
 
 ## 入力ソース
 
-デフォルトでは、パーサは `string` に対して動作します：
+入力コンストラクタは2種類あります：
 
 ```go
-parsec.Run(p, "入力文字列")
-parsec.RunFull(p, "入力文字列")
-```
+// NewStringInput は文字列を Input としてラップします（[]rune スライスを事前確保）。
+func NewStringInput(s string) Input
 
-`io.ReaderAt`（`*os.File`、`*strings.Reader`、`*bytes.Reader` など）から、全内容を `[]rune` バッファに展開せずにパースするには：
-
-```go
 // NewReaderAtInput は r を元にした Input を返します。
 // 内容はオンデマンドで読み込まれます — rune バッファは確保されません。
 // パース中、元の r は有効な状態を維持する必要があります。
 func NewReaderAtInput(r io.ReaderAt) Input
 ```
 
-使用例：
+文字列をパースする一般的なケースには `RunString`/`RunStringFull` の省略形を使います。
+任意の `Input`（`NewReaderAtInput` を含む）には `Run`/`RunFull` を直接使います：
 
 ```go
+// 文字列の省略形
+got, err := parsec.RunString(p, "1,2,3")
+
+// io.ReaderAt ソース
 f, _ := os.Open("data.txt")
 defer f.Close()
-in := parsec.NewReaderAtInput(f)
-got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
+got, err := parsec.Run(p, parsec.NewReaderAtInput(f))
 ```
 
-`stringInput`（`Run`/`RunFull` が使用）は `[]rune` スライスを事前に一度だけ確保します。`readerInput` は文字ごとの I/O と引き換えに O(パーサスタック深さ) のメモリで動作します — 全内容をバッファリングしたくない大きなファイルに適しています。
+`NewStringInput` は `[]rune` スライスを事前に一度だけ確保します。`NewReaderAtInput` は文字ごとの I/O と引き換えに O(パーサスタック深さ) のメモリで動作します — 全内容をバッファリングしたくない大きなファイルに適しています。
 
 ## エラー
 
@@ -217,7 +221,7 @@ fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
 }
 
 p := parsec.Choice(parsec.Parser[int](fortyTwo), parsec.Natural())
-got, _ := parsec.Run(p, "99") // → 99 (fortyTwo は ErrNoMatch を返し、Choice が Natural を試みる)
+got, _ := parsec.RunString(p, "99") // → 99 (fortyTwo は ErrNoMatch を返し、Choice が Natural を試みる)
 ```
 
 ## 例：四則演算パーサ
@@ -256,7 +260,7 @@ func buildExpr() parsec.Parser[int] {
     return expr
 }
 
-got, _ := parsec.RunFull(buildExpr(), "(1 + 2) * -3") // → -9
+got, _ := parsec.RunStringFull(buildExpr(), "(1 + 2) * -3") // → -9
 ```
 
 ## ライセンス
