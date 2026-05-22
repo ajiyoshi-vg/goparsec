@@ -88,3 +88,19 @@ func TestExpr(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkExpr(b *testing.B) {
+	expr := buildExprParser()
+	inputs := []string{
+		"1",
+		"1 + 2 * 3",
+		"(1 + 2) * (3 - 4)",
+		"10 - 3 - 2",
+		"(-4 + 1) * -2",
+	}
+	for b.Loop() {
+		for _, in := range inputs {
+			parsec.RunFull(expr, in)
+		}
+	}
+}

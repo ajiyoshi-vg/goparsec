@@ -5,7 +5,11 @@ type Parser[T any] func(Input) (T, Input, error)
 
 // Run executes p on s, returning the parsed value (remaining input is ignored).
 func Run[T any](p Parser[T], s string) (T, error) {
-	v, _, err := p(NewInput(s))
+	v, rest, err := p(NewInput(s))
+	if err == errNoMatch {
+		// errNoMatch carries no message; rest holds the failure position.
+		err = newError(rest, "no match")
+	}
 	return v, err
 }
 

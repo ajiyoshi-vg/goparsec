@@ -32,8 +32,18 @@ func Many1[T any](p Parser[T]) Parser[[]T] {
 		if err != nil {
 			return nil, in, err
 		}
-		rest, cur, _ := Many(p)(cur)
-		return append([]T{val}, rest...), cur, nil
+		results := []T{val}
+		for {
+			v, next, err := p(cur)
+			if err != nil {
+				return results, cur, nil
+			}
+			if next.Pos() == cur.Pos() {
+				panic("parsec: Many1: parser succeeded without consuming input")
+			}
+			results = append(results, v)
+			cur = next
+		}
 	}
 }
 
@@ -55,14 +65,22 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 			}
 			bestErr = furthestError(bestErr, err)
 		}
+		// All alternatives were soft failures with no position info: synthesize a *ParseError.
+		if bestErr == errNoMatch {
+			return zero, in, newError(in, "no alternatives matched")
+		}
 		return zero, in, bestErr
 	}
 }
 
 // furthestError returns whichever error occurred at the greater input position.
+// errNoMatch (soft failure with no position) always loses to a *ParseError.
 func furthestError(a, b error) error {
-	if a == nil {
+	if a == nil || a == errNoMatch {
 		return b
+	}
+	if b == nil || b == errNoMatch {
+		return a
 	}
 	pa, ok1 := a.(*ParseError)
 	pb, ok2 := b.(*ParseError)
@@ -200,15 +218,31 @@ func Chainl1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 
 // Integer parses an optional '-' followed by one or more digits.
 func Integer() Parser[int] {
-	neg := Option(false, Map(Char('-'), func(rune) bool { return true }))
-	return Bind(neg, func(isNeg bool) Parser[int] {
-		return Map(Natural(), func(n int) int {
-			if isNeg {
-				return -n
+	return func(in Input) (int, Input, error) {
+		cur := in
+		neg := false
+		if c, ok := cur.Head(); ok && c == '-' {
+			neg = true
+			cur = cur.Advance()
+		}
+		c, ok := cur.Head()
+		if !ok || c < '0' || c > '9' {
+			return 0, in, errNoMatch
+		}
+		n := int(c - '0')
+		cur = cur.Advance()
+		for {
+			c, ok = cur.Head()
+			if !ok || c < '0' || c > '9' {
+				break
 			}
-			return n
-		})
-	})
+			n, cur = n*10+int(c-'0'), cur.Advance()
+		}
+		if neg {
+			return -n, cur, nil
+		}
+		return n, cur, nil
+	}
 }
 
 // Float parses an optional '-', one or more digits, an optional fractional part
@@ -329,11 +363,18 @@ func Chainr1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 
 // Natural parses one or more digits as a non-negative integer.
 func Natural() Parser[int] {
-	return Map(Many1(Digit()), func(digits []rune) int {
-		n := 0
-		for _, d := range digits {
-			n = n*10 + int(d-'0')
+	return func(in Input) (int, Input, error) {
+		c, ok := in.Head()
+		if !ok || c < '0' || c > '9' {
+			return 0, in, errNoMatch
 		}
-		return n
-	})
+		n, cur := int(c-'0'), in.Advance()
+		for {
+			c, ok = cur.Head()
+			if !ok || c < '0' || c > '9' {
+				return n, cur, nil
+			}
+			n, cur = n*10+int(c-'0'), cur.Advance()
+		}
+	}
 }

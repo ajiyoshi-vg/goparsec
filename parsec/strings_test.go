@@ -192,3 +192,33 @@ func FuzzJSONString(f *testing.F) {
 		}
 	})
 }
+
+func BenchmarkGoString(b *testing.B) {
+	p := parsec.GoString()
+	inputs := []string{
+		`"hello"`,
+		`"hello\nworld\ttab"`,
+		`"back\\slash and \"quotes\""`,
+		`"中文"`,
+	}
+	for b.Loop() {
+		for _, in := range inputs {
+			parsec.Run(p, in)
+		}
+	}
+}
+
+func BenchmarkJSONString(b *testing.B) {
+	p := parsec.JSONString()
+	inputs := []string{
+		`"hello"`,
+		`"hello\nworld\ttab"`,
+		`"back\\slash and \"quotes\""`,
+		`"中文"`,
+	}
+	for b.Loop() {
+		for _, in := range inputs {
+			parsec.Run(p, in)
+		}
+	}
+}

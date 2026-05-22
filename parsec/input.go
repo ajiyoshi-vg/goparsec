@@ -1,6 +1,9 @@
 package parsec
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Input is the interface that parser input streams must implement.
 // All methods must be pure — implementations should be immutable value types.
@@ -74,3 +77,8 @@ func (e *ParseError) Error() string {
 func newError(in Input, msg string) error {
 	return &ParseError{Pos: in.Pos(), Line: in.Line(), Col: in.Col(), Message: msg}
 }
+
+// errNoMatch is the zero-allocation sentinel for a soft failure: the parser did not
+// match at this position and consumed no input. The caller (Choice, Label) is
+// responsible for converting it to a *ParseError when a user-visible message is needed.
+var errNoMatch = errors.New("parsec: no match")

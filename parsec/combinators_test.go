@@ -518,3 +518,78 @@ func TestFloat_fail(t *testing.T) {
 		t.Error("expected error for non-float input")
 	}
 }
+
+// TestNatural_allocs verifies that Natural does not allocate for intermediate
+// digit slices. Only NewInput (2) and one Advance per digit should allocate.
+func TestNatural_allocs(t *testing.T) {
+	p := parsec.Natural()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "12345")
+	})
+	// 2 (NewInput) + 5 (Advance per digit) + 1 (EOF newError) = 8 max
+	if allocs > 8 {
+		t.Errorf("Natural allocs = %.0f, want ≤8", allocs)
+	}
+}
+
+// TestInteger_allocs verifies that Integer does not allocate for intermediate
+// digit slices or per-call combinator closures.
+func TestInteger_allocs(t *testing.T) {
+	p := parsec.Integer()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "-12345")
+	})
+	// 2 (NewInput) + 6 (Advance: '-' + 5 digits) + 1 (EOF newError) = 9 max
+	if allocs > 9 {
+		t.Errorf("Integer allocs = %.0f, want ≤9", allocs)
+	}
+}
+
+func BenchmarkNatural(b *testing.B) {
+	p := parsec.Natural()
+	for b.Loop() {
+		parsec.Run(p, "12345")
+	}
+}
+
+func BenchmarkInteger(b *testing.B) {
+	p := parsec.Integer()
+	for b.Loop() {
+		parsec.Run(p, "-12345")
+	}
+}
+
+func BenchmarkFloat(b *testing.B) {
+	p := parsec.Float()
+	for b.Loop() {
+		parsec.Run(p, "-3.14e+10")
+	}
+}
+
+func BenchmarkMany(b *testing.B) {
+	p := parsec.Many(parsec.Digit())
+	for b.Loop() {
+		parsec.Run(p, "1234567890")
+	}
+}
+
+func BenchmarkChoice_first(b *testing.B) {
+	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
+	for b.Loop() {
+		parsec.Run(p, "abc")
+	}
+}
+
+func BenchmarkChoice_last(b *testing.B) {
+	p := parsec.Choice(parsec.Char('a'), parsec.Char('b'), parsec.Char('c'))
+	for b.Loop() {
+		parsec.Run(p, "cba")
+	}
+}
+
+func BenchmarkSepBy(b *testing.B) {
+	p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
+	for b.Loop() {
+		parsec.Run(p, "1,2,3,4,5")
+	}
+}

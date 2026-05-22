@@ -10,7 +10,7 @@ func Satisfy(pred func(rune) bool) Parser[rune] {
 			return 0, in, newError(in, "unexpected end of input")
 		}
 		if !pred(c) {
-			return 0, in, newError(in, fmt.Sprintf("unexpected %q", c))
+			return 0, in, errNoMatch
 		}
 		return c, in.Advance(), nil
 	}
@@ -30,12 +30,17 @@ func AnyChar() Parser[rune] {
 func String(s string) Parser[string] {
 	return func(in Input) (string, Input, error) {
 		cur := in
-		for _, c := range []rune(s) {
+		for i, c := range []rune(s) {
 			r, ok := cur.Head()
 			if !ok {
 				return "", in, newError(cur, fmt.Sprintf("expected %q, got EOF", s))
 			}
 			if r != c {
+				if i == 0 {
+					// Clean soft failure: no characters consumed yet.
+					return "", in, errNoMatch
+				}
+				// Partial match: report the deeper position for better error messages.
 				return "", in, newError(cur, fmt.Sprintf("expected %q", s))
 			}
 			cur = cur.Advance()
