@@ -3,6 +3,7 @@ package parsec_test
 import (
 	"testing"
 
+	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
@@ -187,7 +188,7 @@ func TestRunStringFull_extraInput(t *testing.T) {
 // and that these interact correctly with Choice and error reporting.
 func TestCustomParser_politeErrors(t *testing.T) {
 	// Custom parser: matches "42", returns ErrNoMatch on any other input.
-	fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
+	fortyTwo := func(in input.Input) (int, input.Input, error) {
 		c, ok := in.Head()
 		if !ok || c != '4' {
 			return 0, in, parsec.ErrNoMatch // soft failure: caller may try alternatives
@@ -227,7 +228,7 @@ func TestCustomParser_politeErrors(t *testing.T) {
 // TestNewErrorf verifies that NewErrorf produces a *ParseError with the formatted
 // message at the correct position, matching NewError(in, fmt.Sprintf(format, args...)).
 func TestNewErrorf(t *testing.T) {
-	p := func(in parsec.Input) (rune, parsec.Input, error) {
+	p := func(in input.Input) (rune, input.Input, error) {
 		c, ok := in.Head()
 		if !ok {
 			return 0, in, parsec.NewErrorf(in, "expected digit, got EOF")

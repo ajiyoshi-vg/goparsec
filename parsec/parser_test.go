@@ -4,11 +4,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ajiyoshi-vg/goparsec/input"
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
 func TestRun_withInput(t *testing.T) {
-	in := parsec.NewStringInput("123abc")
+	in := input.NewString("123abc")
 	got, err := parsec.Run(parsec.Natural(), in)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -19,7 +20,7 @@ func TestRun_withInput(t *testing.T) {
 }
 
 func TestRun_withReaderAt(t *testing.T) {
-	in := parsec.NewReaderAtInput(strings.NewReader("1,2,3"))
+	in := input.NewReaderAt(strings.NewReader("1,2,3"))
 	p := parsec.SepBy(parsec.Natural(), parsec.Char(','))
 	got, err := parsec.Run(p, in)
 	if err != nil {
@@ -32,7 +33,7 @@ func TestRun_withReaderAt(t *testing.T) {
 }
 
 func TestRunFull_withInput(t *testing.T) {
-	in := parsec.NewStringInput("abc")
+	in := input.NewString("abc")
 	_, err := parsec.RunFull(parsec.Many1Chars(parsec.Letter()), in)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -40,7 +41,7 @@ func TestRunFull_withInput(t *testing.T) {
 }
 
 func TestRunFull_withInput_extraInput(t *testing.T) {
-	in := parsec.NewStringInput("ab1")
+	in := input.NewString("ab1")
 	_, err := parsec.RunFull(parsec.Many1Chars(parsec.Letter()), in)
 	if err == nil {
 		t.Fatal("expected error for unconsumed input, got nil")

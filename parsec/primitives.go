@@ -1,9 +1,10 @@
 package parsec
 
+import "github.com/ajiyoshi-vg/goparsec/input"
 
 // Satisfy parses a single rune satisfying pred.
 func Satisfy(pred func(rune) bool) Parser[rune] {
-	return func(in Input) (rune, Input, error) {
+	return func(in input.Input) (rune, input.Input, error) {
 		c, ok := in.Head()
 		if !ok {
 			return 0, in, NewError(in, "unexpected end of input")
@@ -27,7 +28,7 @@ func AnyChar() Parser[rune] {
 
 // Literal parses the exact string s.
 func Literal(s string) Parser[string] {
-	return func(in Input) (string, Input, error) {
+	return func(in input.Input) (string, input.Input, error) {
 		cur := in
 		for i, c := range []rune(s) {
 			r, ok := cur.Head()
@@ -50,7 +51,7 @@ func Literal(s string) Parser[string] {
 
 // EOF succeeds only at end of input.
 func EOF() Parser[struct{}] {
-	return func(in Input) (struct{}, Input, error) {
+	return func(in input.Input) (struct{}, input.Input, error) {
 		if !in.IsEOF() {
 			c, _ := in.Head()
 			return struct{}{}, in, NewErrorf(in, "expected EOF, got %q", c)

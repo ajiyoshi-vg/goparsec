@@ -3,12 +3,14 @@ package parsec
 import (
 	"strconv"
 	"strings"
+
+	"github.com/ajiyoshi-vg/goparsec/input"
 )
 
 // Many parses zero or more occurrences of p. Always succeeds.
 // Panics if p succeeds without consuming input, which would cause an infinite loop.
 func Many[T any](p Parser[T]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
+	return func(in input.Input) ([]T, input.Input, error) {
 		results := []T{}
 		cur := in
 		for {
@@ -27,7 +29,7 @@ func Many[T any](p Parser[T]) Parser[[]T] {
 
 // Many1 parses one or more occurrences of p.
 func Many1[T any](p Parser[T]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
+	return func(in input.Input) ([]T, input.Input, error) {
 		val, cur, err := p(in)
 		if err != nil {
 			return nil, in, err
@@ -52,7 +54,7 @@ func Many1[T any](p Parser[T]) Parser[[]T] {
 // Reports the error from whichever parser reached the furthest position.
 // Fails immediately if called with no parsers.
 func Choice[T any](ps ...Parser[T]) Parser[T] {
-	return func(in Input) (T, Input, error) {
+	return func(in input.Input) (T, input.Input, error) {
 		var zero T
 		if len(ps) == 0 {
 			return zero, in, NewError(in, "Choice: no alternatives")
@@ -95,14 +97,14 @@ func furthestError(a, b error) error {
 
 // Return always succeeds with v without consuming any input.
 func Return[T any](v T) Parser[T] {
-	return func(in Input) (T, Input, error) {
+	return func(in input.Input) (T, input.Input, error) {
 		return v, in, nil
 	}
 }
 
 // Option returns def if p fails, without consuming input.
 func Option[T any](def T, p Parser[T]) Parser[T] {
-	return func(in Input) (T, Input, error) {
+	return func(in input.Input) (T, input.Input, error) {
 		val, next, err := p(in)
 		if err != nil {
 			return def, in, nil
@@ -113,7 +115,7 @@ func Option[T any](def T, p Parser[T]) Parser[T] {
 
 // Map transforms the result of p using f.
 func Map[T, U any](p Parser[T], f func(T) U) Parser[U] {
-	return func(in Input) (U, Input, error) {
+	return func(in input.Input) (U, input.Input, error) {
 		val, next, err := p(in)
 		if err != nil {
 			var zero U
@@ -125,7 +127,7 @@ func Map[T, U any](p Parser[T], f func(T) U) Parser[U] {
 
 // Bind sequences p then applies f to its result to obtain the next parser.
 func Bind[T, U any](p Parser[T], f func(T) Parser[U]) Parser[U] {
-	return func(in Input) (U, Input, error) {
+	return func(in input.Input) (U, input.Input, error) {
 		val, next, err := p(in)
 		if err != nil {
 			var zero U
@@ -137,7 +139,7 @@ func Bind[T, U any](p Parser[T], f func(T) Parser[U]) Parser[U] {
 
 // Then runs pa, discards its result, then runs pb.
 func Then[T, U any](pa Parser[T], pb Parser[U]) Parser[U] {
-	return func(in Input) (U, Input, error) {
+	return func(in input.Input) (U, input.Input, error) {
 		_, next, err := pa(in)
 		if err != nil {
 			var zero U
@@ -149,7 +151,7 @@ func Then[T, U any](pa Parser[T], pb Parser[U]) Parser[U] {
 
 // Skip runs pa then pb, returning pa's result.
 func Skip[T, U any](pa Parser[T], pb Parser[U]) Parser[T] {
-	return func(in Input) (T, Input, error) {
+	return func(in input.Input) (T, input.Input, error) {
 		val, next, err := pa(in)
 		if err != nil {
 			return val, in, err
@@ -170,7 +172,7 @@ func Between[O, T, C any](open Parser[O], p Parser[T], end Parser[C]) Parser[T] 
 
 // SepBy parses zero or more occurrences of p separated by sep.
 func SepBy[T, S any](p Parser[T], sep Parser[S]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
+	return func(in input.Input) ([]T, input.Input, error) {
 		val, cur, err := p(in)
 		if err != nil {
 			return []T{}, in, nil
@@ -218,7 +220,7 @@ func Chainl1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 
 // Integer parses an optional '-' followed by one or more digits.
 func Integer() Parser[int] {
-	return func(in Input) (int, Input, error) {
+	return func(in input.Input) (int, input.Input, error) {
 		cur := in
 		neg := false
 		if c, ok := cur.Head(); ok && c == '-' {
@@ -248,7 +250,7 @@ func Integer() Parser[int] {
 // Float parses an optional '-', one or more digits, an optional fractional part
 // ('.' digits), and an optional exponent ([eE][+-]? digits), returning float64.
 func Float() Parser[float64] {
-	return func(in Input) (float64, Input, error) {
+	return func(in input.Input) (float64, input.Input, error) {
 		var b strings.Builder
 		cur := in
 
@@ -312,7 +314,7 @@ func Float() Parser[float64] {
 // Useful for ensuring a token is not followed by unexpected characters
 // (e.g., distinguishing keywords from identifiers).
 func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
-	return func(in Input) (struct{}, Input, error) {
+	return func(in input.Input) (struct{}, input.Input, error) {
 		_, _, err := p(in)
 		if err == nil {
 			c, ok := in.Head()
@@ -327,7 +329,7 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 
 // Label attaches a description to p, replacing its error message on failure.
 func Label[T any](p Parser[T], label string) Parser[T] {
-	return func(in Input) (T, Input, error) {
+	return func(in input.Input) (T, input.Input, error) {
 		val, next, err := p(in)
 		if err == nil {
 			return val, next, nil
@@ -344,7 +346,7 @@ func Label[T any](p Parser[T], label string) Parser[T] {
 
 // Count parses exactly n occurrences of p, failing if fewer are found.
 func Count[T any](n int, p Parser[T]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
+	return func(in input.Input) ([]T, input.Input, error) {
 		results := make([]T, 0, n)
 		cur := in
 		for range n {
@@ -362,7 +364,7 @@ func Count[T any](n int, p Parser[T]) Parser[[]T] {
 // ManyTill parses p zero or more times until end succeeds, consuming end.
 // Panics if p succeeds without consuming input, which would cause an infinite loop.
 func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
-	return func(in Input) ([]T, Input, error) {
+	return func(in input.Input) ([]T, input.Input, error) {
 		results := []T{}
 		cur := in
 		for {
@@ -386,7 +388,7 @@ func ManyTill[T, E any](p Parser[T], end Parser[E]) Parser[[]T] {
 // folding the results right-associatively.
 func Chainr1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 	var rec Parser[T]
-	rec = func(in Input) (T, Input, error) {
+	rec = func(in input.Input) (T, input.Input, error) {
 		return Bind(p, func(x T) Parser[T] {
 			return Option(x, Bind(op, func(f func(T, T) T) Parser[T] {
 				return Map(rec, func(y T) T { return f(x, y) })
@@ -398,7 +400,7 @@ func Chainr1[T any](p Parser[T], op Parser[func(T, T) T]) Parser[T] {
 
 // Natural parses one or more digits as a non-negative integer.
 func Natural() Parser[int] {
-	return func(in Input) (int, Input, error) {
+	return func(in input.Input) (int, input.Input, error) {
 		c, ok := in.Head()
 		if !ok || c < '0' || c > '9' {
 			return 0, in, ErrNoMatch

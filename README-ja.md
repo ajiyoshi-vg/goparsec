@@ -36,7 +36,7 @@ func main() {
 `Parser[T]` は次のシグネチャを持つ関数です：
 
 ```go
-type Parser[T any] func(Input) (T, Input, error)
+type Parser[T any] func(input.Input) (T, input.Input, error)
 ```
 
 `Input` を受け取り、型 `T` の値と残りの `Input`、エラーを返します。
@@ -47,10 +47,10 @@ type Parser[T any] func(Input) (T, Input, error)
 
 ```go
 // Run は p で in を解析します。残りの入力は無視されます。
-func Run[T any](p Parser[T], in Input) (T, error)
+func Run[T any](p Parser[T], in input.Input) (T, error)
 
 // RunFull は p で in を解析し、入力が残っていた場合は失敗します。
-func RunFull[T any](p Parser[T], in Input) (T, error)
+func RunFull[T any](p Parser[T], in input.Input) (T, error)
 
 // RunString・RunStringFull は文字列入力のよく使われる省略形です。
 func RunString[T any](p Parser[T], s string) (T, error)
@@ -147,17 +147,17 @@ JSONString() Parser[string]
 入力コンストラクタは2種類あります：
 
 ```go
-// NewStringInput は文字列を Input としてラップします（[]rune スライスを事前確保）。
-func NewStringInput(s string) Input
+// NewString は文字列を Input としてラップします（[]rune スライスを事前確保）。
+func NewString(s string) input.Input
 
-// NewReaderAtInput は r を元にした Input を返します。
+// NewReaderAt は r を元にした Input を返します。
 // 内容はオンデマンドで読み込まれます — rune バッファは確保されません。
 // パース中、元の r は有効な状態を維持する必要があります。
-func NewReaderAtInput(r io.ReaderAt) Input
+func NewReaderAt(r io.ReaderAt) input.Input
 ```
 
 文字列をパースする一般的なケースには `RunString`/`RunStringFull` の省略形を使います。
-任意の `Input`（`NewReaderAtInput` を含む）には `Run`/`RunFull` を直接使います：
+任意の `Input`（`input.NewReaderAt` を含む）には `Run`/`RunFull` を直接使います：
 
 ```go
 // 文字列の省略形
@@ -166,14 +166,14 @@ got, err := parsec.RunString(p, "1,2,3")
 // io.ReaderAt ソース
 f, _ := os.Open("data.txt")
 defer f.Close()
-got, err := parsec.Run(p, parsec.NewReaderAtInput(f))
+got, err := parsec.Run(p, input.NewReaderAt(f))
 ```
 
-`NewStringInput` は `[]rune` スライスを事前に一度だけ確保します。`NewReaderAtInput` は文字ごとの I/O と引き換えに O(パーサスタック深さ) のメモリで動作します — 全内容をバッファリングしたくない大きなファイルに適しています。
+`input.NewString` は `[]rune` スライスを事前に一度だけ確保します。`input.NewReaderAt` は文字ごとの I/O と引き換えに O(パーサスタック深さ) のメモリで動作します — 全内容をバッファリングしたくない大きなファイルに適しています。
 
 ## エラー
 
-`*ParseError` は行・列・メッセージを保持します：
+`parsec.ParseError` は行・列・メッセージを保持します：
 
 ```go
 type ParseError struct {
@@ -188,8 +188,8 @@ type ParseError struct {
 
 ## カスタムパーサの書き方
 
-カスタムパーサは `func(Input) (T, Input, error)` というシグネチャを持つ関数です。
-`Choice` や `Label` と正しく連携するために、次の 2 つのエラーコンストラクタを使用してください：
+カスタムパーサは `func(input.Input) (T, input.Input, error)` というシグネチャを持つ関数です。
+`Choice` や `Label` と正しく連携するために、`parsec` のエラーコンストラクタを使用してください：
 
 ```go
 // ErrNoMatch はアロケーションなしで「ここではマッチしない」を表すセンチネルです。
@@ -198,16 +198,16 @@ var ErrNoMatch error
 
 // NewError は現在位置に紐づいた *ParseError を返します。
 // 次の代替案に黙って進んでほしくない失敗に使います。
-func NewError(in Input, msg string) error
+func NewError(in input.Input, msg string) error
 
 // NewErrorf は NewError の fmt.Sprintf 版です。
-func NewErrorf(in Input, format string, args ...any) error
+func NewErrorf(in input.Input, format string, args ...any) error
 ```
 
 例 — リテラル `42` にマッチするパーサ：
 
 ```go
-fortyTwo := func(in parsec.Input) (int, parsec.Input, error) {
+fortyTwo := func(in input.Input) (int, input.Input, error) {
     c, ok := in.Head()
     if !ok || c != '4' {
         return 0, in, parsec.ErrNoMatch // ソフト失敗: Choice が次を試みる
@@ -240,10 +240,10 @@ func buildExpr() parsec.Parser[int] {
         return parsec.Map(tok(c), func(rune) func(int, int) int { return fn })
     }
 
-    factor := func(in parsec.Input) (int, parsec.Input, error) {
+    factor := func(in input.Input) (int, input.Input, error) {
         paren := parsec.Between(
             tok('('),
-            parsec.Parser[int](func(in parsec.Input) (int, parsec.Input, error) {
+            parsec.Parser[int](func(in input.Input) (int, input.Input, error) {
                 return expr(in)
             }),
             tok(')'),

@@ -1,6 +1,10 @@
 package parsec
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/ajiyoshi-vg/goparsec/input"
+)
 
 // GoString parses a Go double-quoted string literal with escape sequences.
 //
@@ -115,7 +119,7 @@ func jsonUnicodeEscape() Parser[rune] {
 			return Bind(Char('\\'), func(rune) Parser[rune] {
 				return Bind(hex4, func(lo rune) Parser[rune] {
 					if lo < 0xDC00 || lo > 0xDFFF {
-						return func(in Input) (rune, Input, error) {
+						return func(in input.Input) (rune, input.Input, error) {
 							return 0, in, NewError(in, "invalid surrogate pair: low surrogate expected")
 						}
 					}
@@ -131,7 +135,7 @@ func jsonUnicodeEscape() Parser[rune] {
 // It is the string-accumulating equivalent of Many — avoiding the []rune intermediate
 // allocation that Map(Many(p), string) would produce.
 func ManyChars(p Parser[rune]) Parser[string] {
-	return func(in Input) (string, Input, error) {
+	return func(in input.Input) (string, input.Input, error) {
 		var b strings.Builder
 		cur := in
 		for {
@@ -151,7 +155,7 @@ func ManyChars(p Parser[rune]) Parser[string] {
 // Many1Chars runs p one or more times, accumulating runes into a string.
 // Fails if p does not match at least once.
 func Many1Chars(p Parser[rune]) Parser[string] {
-	return func(in Input) (string, Input, error) {
+	return func(in input.Input) (string, input.Input, error) {
 		r, cur, err := p(in)
 		if err != nil {
 			return "", in, err
