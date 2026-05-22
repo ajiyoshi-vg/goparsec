@@ -109,6 +109,10 @@ Map(p, f)              // p の結果に f を適用する
 Map2(p1, p2, f)        // p1、p2 を順に実行し、両方の結果に f を適用する
 Map3(p1, p2, p3, f)    // 3 つのパーサを順に実行し、全結果に f を適用する
 Map4(p1, p2, p3, p4, f)
+TryMap(p, f)           // Map の変種。f がエラーを返せる。失敗は ParseError になる
+TryMap2(p1, p2, f)
+TryMap3(p1, p2, p3, f)
+TryMap4(p1, p2, p3, p4, f)
 Return(v)              // 入力を消費せず v で常に成功する
 Value(p, v)            // p を実行して結果を捨て、v を返す
 ```
