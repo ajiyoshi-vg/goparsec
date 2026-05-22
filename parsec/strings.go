@@ -10,7 +10,7 @@ import "strings"
 //   \uNNNN        (Unicode code point, 4 hex digits)
 //   \UNNNNNNNN    (Unicode code point, 8 hex digits)
 func GoString() Parser[string] {
-	return Between(Char('"'), manyString(goStringChar()), Char('"'))
+	return Between(Char('"'), ManyChars(goStringChar()), Char('"'))
 }
 
 func goStringChar() Parser[rune] {
@@ -78,7 +78,7 @@ func hexDigitVal(r rune) rune {
 //	\uNNNN              (Unicode code point, 4 hex digits)
 //	\uHHHH\uLLLL        (UTF-16 surrogate pair for code points > U+FFFF)
 func JSONString() Parser[string] {
-	return Between(Char('"'), manyString(jsonStringChar()), Char('"'))
+	return Between(Char('"'), ManyChars(jsonStringChar()), Char('"'))
 }
 
 func jsonStringChar() Parser[rune] {
@@ -127,9 +127,10 @@ func jsonUnicodeEscape() Parser[rune] {
 	})
 }
 
-// manyString runs p in a loop, accumulating runes directly into a strings.Builder.
-// This avoids the []rune intermediate slice that Map(Many(p), string) would allocate.
-func manyString(p Parser[rune]) Parser[string] {
+// ManyChars runs p zero or more times, accumulating runes directly into a string.
+// It is the string-accumulating equivalent of Many — avoiding the []rune intermediate
+// allocation that Map(Many(p), string) would produce.
+func ManyChars(p Parser[rune]) Parser[string] {
 	return func(in Input) (string, Input, error) {
 		var b strings.Builder
 		cur := in
@@ -139,7 +140,31 @@ func manyString(p Parser[rune]) Parser[string] {
 				return b.String(), cur, nil
 			}
 			if next.Pos() == cur.Pos() {
-				panic("parsec: manyString: parser succeeded without consuming input")
+				panic("parsec: ManyChars: parser succeeded without consuming input")
+			}
+			b.WriteRune(r)
+			cur = next
+		}
+	}
+}
+
+// Many1Chars runs p one or more times, accumulating runes into a string.
+// Fails if p does not match at least once.
+func Many1Chars(p Parser[rune]) Parser[string] {
+	return func(in Input) (string, Input, error) {
+		r, cur, err := p(in)
+		if err != nil {
+			return "", in, err
+		}
+		var b strings.Builder
+		b.WriteRune(r)
+		for {
+			r, next, err := p(cur)
+			if err != nil {
+				return b.String(), cur, nil
+			}
+			if next.Pos() == cur.Pos() {
+				panic("parsec: Many1Chars: parser succeeded without consuming input")
 			}
 			b.WriteRune(r)
 			cur = next

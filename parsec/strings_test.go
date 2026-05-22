@@ -9,6 +9,43 @@ import (
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
+func TestManyChars(t *testing.T) {
+	got, err := parsec.Run(parsec.ManyChars(parsec.Letter()), "hello123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "hello" {
+		t.Errorf("got %q, want \"hello\"", got)
+	}
+}
+
+func TestManyChars_zero(t *testing.T) {
+	got, err := parsec.Run(parsec.ManyChars(parsec.Letter()), "123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "" {
+		t.Errorf("got %q, want \"\"", got)
+	}
+}
+
+func TestMany1Chars(t *testing.T) {
+	got, err := parsec.Run(parsec.Many1Chars(parsec.AlphaNum()), "abc123 rest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "abc123" {
+		t.Errorf("got %q, want \"abc123\"", got)
+	}
+}
+
+func TestMany1Chars_fail(t *testing.T) {
+	_, err := parsec.Run(parsec.Many1Chars(parsec.Letter()), "123")
+	if err == nil {
+		t.Error("expected error when no match")
+	}
+}
+
 func TestGoString(t *testing.T) {
 	tests := []struct {
 		input string

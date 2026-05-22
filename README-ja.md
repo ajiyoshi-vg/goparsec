@@ -59,7 +59,7 @@ func RunFull[T any](p Parser[T], s string) (T, error)
 |---|---|
 | `Char(c)` | ルーン `c` と完全一致 |
 | `AnyChar()` | 任意の 1 文字 |
-| `String(s)` | 文字列 `s` と完全一致 |
+| `Literal(s)` | 文字列 `s` と完全一致 |
 | `Satisfy(pred)` | `pred(r)` が true となるルーン |
 | `Digit()` | `0`–`9` |
 | `Letter()` | ASCII アルファベット `a`–`z`、`A`–`Z` |
@@ -82,11 +82,13 @@ Bind(p, f)              // p を実行し、その結果を f に渡して得た
 ### 繰り返し
 
 ```go
-Many(p)          // 0 回以上。常に成功
-Many1(p)         // 1 回以上。1 回もマッチしなければ失敗
-Count(n, p)      // ちょうど n 回
-SepBy(p, sep)    // sep で区切られた p を 0 回以上
-ManyTill(p, end) // end が成功するまで p を 0 回以上繰り返す。end を消費する
+Many(p)           // 0 回以上。常に成功
+Many1(p)          // 1 回以上。1 回もマッチしなければ失敗
+ManyChars(p)      // 0 回以上のルーンを文字列として収集
+Many1Chars(p)     // 1 回以上のルーンを文字列として収集
+Count(n, p)       // ちょうど n 回
+SepBy(p, sep)     // sep で区切られた p を 0 回以上
+ManyTill(p, end)  // end が成功するまで p を 0 回以上繰り返す。end を消費する
 ```
 
 ### 選択・省略可能
