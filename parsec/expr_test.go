@@ -23,12 +23,8 @@ func buildExprParser() parsec.Parser[int] {
 	var expr parsec.Parser[int]
 	w := parsec.Spaces()
 
-	// tok and opParser close over w
 	tok := func(c rune) parsec.Parser[rune] {
 		return parsec.Then(w, parsec.Char(c))
-	}
-	opParser := func(c rune, fn func(int, int) int) parsec.Parser[func(int, int) int] {
-		return parsec.Map(tok(c), func(rune) func(int, int) int { return fn })
 	}
 
 	factor := func(in input.Input) (int, input.Input, error) {
@@ -42,8 +38,8 @@ func buildExprParser() parsec.Parser[int] {
 		return parsec.Choice(parsec.Then(w, parsec.Integer()), paren)(in)
 	}
 
-	mulOp := parsec.Choice(opParser('*', mul), opParser('/', div))
-	addOp := parsec.Choice(opParser('+', add), opParser('-', sub))
+	mulOp := parsec.Choice(parsec.Value(tok('*'), mul), parsec.Value(tok('/'), div))
+	addOp := parsec.Choice(parsec.Value(tok('+'), add), parsec.Value(tok('-'), sub))
 
 	term := parsec.Chainl1(parsec.Parser[int](factor), mulOp)
 	expr = parsec.Chainl1(term, addOp)
