@@ -164,9 +164,9 @@ func Skip[T, U any](pa Parser[T], pb Parser[U]) Parser[T] {
 	}
 }
 
-// Between parses open, then p, then close, returning p's result.
-func Between[O, C, T any](open Parser[O], close Parser[C], p Parser[T]) Parser[T] {
-	return Then(open, Skip(p, close))
+// Between parses open, then p, then end, returning p's result.
+func Between[O, T, C any](open Parser[O], p Parser[T], end Parser[C]) Parser[T] {
+	return Then(open, Skip(p, end))
 }
 
 // SepBy parses zero or more occurrences of p separated by sep.

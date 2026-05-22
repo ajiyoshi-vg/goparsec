@@ -163,7 +163,7 @@ func TestSkip(t *testing.T) {
 }
 
 func TestBetween(t *testing.T) {
-	p := parsec.Between(parsec.Char('('), parsec.Char(')'), parsec.Digit())
+	p := parsec.Between(parsec.Char('('), parsec.Digit(), parsec.Char(')'))
 	got, err := parsec.Run(p, "(5)")
 	if err != nil {
 		t.Fatal(err)

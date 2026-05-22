@@ -54,7 +54,7 @@ func newJSONParser() parsec.Parser[any] {
 
 	// array: '[' ws (value (',' value)*)? ws ']'
 	jarray := parsec.Map(
-		parsec.Between(tok('['), tok(']'), parsec.SepBy(lazy, comma)),
+		parsec.Between(tok('['), parsec.SepBy(lazy, comma), tok(']')),
 		jsonArray,
 	)
 
@@ -64,7 +64,7 @@ func newJSONParser() parsec.Parser[any] {
 		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
 	})
 	jobject := parsec.Map(
-		parsec.Between(tok('{'), tok('}'), parsec.SepBy(pair, comma)),
+		parsec.Between(tok('{'), parsec.SepBy(pair, comma), tok('}')),
 		jsonObject,
 	)
 

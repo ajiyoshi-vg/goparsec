@@ -75,7 +75,7 @@ func RunFull[T any](p Parser[T], s string) (T, error)
 ```go
 Then(pa, pb)            // pa を実行し、次に pb を実行して pb の結果を返す
 Skip(pa, pb)            // pa を実行し、次に pb を実行して pa の結果を返す
-Between(open, p, close) // open、p、close を順に実行して p の結果を返す
+Between(open, p, end)   // open、p、end を順に実行して p の結果を返す
 Bind(p, f)              // p を実行し、その結果を f に渡して得たパーサを実行する
 ```
 
@@ -204,10 +204,11 @@ func buildExpr() parsec.Parser[int] {
 
     factor := func(in parsec.Input) (int, parsec.Input, error) {
         paren := parsec.Between(
-            tok('('), tok(')'),
+            tok('('),
             parsec.Parser[int](func(in parsec.Input) (int, parsec.Input, error) {
                 return expr(in)
             }),
+            tok(')'),
         )
         return parsec.Choice(parsec.Then(w, parsec.Integer()), paren)(in)
     }
