@@ -139,6 +139,35 @@ GoString() Parser[string]
 JSONString() Parser[string]
 ```
 
+## Input sources
+
+By default, parsers run on a `string`:
+
+```go
+parsec.Run(p, "input string")
+parsec.RunFull(p, "input string")
+```
+
+To parse from an `io.ReaderAt` (e.g. `*os.File`, `*strings.Reader`, `*bytes.Reader`) without loading the entire contents into a `[]rune` buffer:
+
+```go
+// NewReaderInput returns an Input backed by r.
+// Content is read on demand — no rune buffer is allocated.
+// The underlying r must remain valid for the duration of parsing.
+func NewReaderInput(r io.ReaderAt) Input
+```
+
+Example:
+
+```go
+f, _ := os.Open("data.txt")
+defer f.Close()
+in := parsec.NewReaderInput(f)
+got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
+```
+
+`stringInput` (used by `Run`/`RunFull`) allocates a single `[]rune` slice upfront and never reads from disk. `readerInput` trades per-character I/O for O(parser-stack-depth) memory — useful for large files where you do not want to buffer the entire content.
+
 ## Errors
 
 A `*ParseError` carries the line, column, and a message:

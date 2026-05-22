@@ -138,6 +138,35 @@ GoString() Parser[string]
 JSONString() Parser[string]
 ```
 
+## 入力ソース
+
+デフォルトでは、パーサは `string` に対して動作します：
+
+```go
+parsec.Run(p, "入力文字列")
+parsec.RunFull(p, "入力文字列")
+```
+
+`io.ReaderAt`（`*os.File`、`*strings.Reader`、`*bytes.Reader` など）から、全内容を `[]rune` バッファに展開せずにパースするには：
+
+```go
+// NewReaderInput は r を元にした Input を返します。
+// 内容はオンデマンドで読み込まれます — rune バッファは確保されません。
+// パース中、元の r は有効な状態を維持する必要があります。
+func NewReaderInput(r io.ReaderAt) Input
+```
+
+使用例：
+
+```go
+f, _ := os.Open("data.txt")
+defer f.Close()
+in := parsec.NewReaderInput(f)
+got, _, err := parsec.SepBy(parsec.Natural(), parsec.Char(','))(in)
+```
+
+`stringInput`（`Run`/`RunFull` が使用）は `[]rune` スライスを事前に一度だけ確保します。`readerInput` は文字ごとの I/O と引き換えに O(パーサスタック深さ) のメモリで動作します — 全内容をバッファリングしたくない大きなファイルに適しています。
+
 ## エラー
 
 `*ParseError` は行・列・メッセージを保持します：
