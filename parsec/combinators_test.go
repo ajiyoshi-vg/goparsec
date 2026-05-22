@@ -519,6 +519,32 @@ func TestFloat_fail(t *testing.T) {
 	}
 }
 
+// TestNatural_allocs verifies that Natural does not allocate for intermediate
+// digit slices. Only NewInput (2) and one Advance per digit should allocate.
+func TestNatural_allocs(t *testing.T) {
+	p := parsec.Natural()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "12345")
+	})
+	// 2 (NewInput) + 5 (Advance per digit) + 1 (EOF newError) = 8 max
+	if allocs > 8 {
+		t.Errorf("Natural allocs = %.0f, want ≤8", allocs)
+	}
+}
+
+// TestInteger_allocs verifies that Integer does not allocate for intermediate
+// digit slices or per-call combinator closures.
+func TestInteger_allocs(t *testing.T) {
+	p := parsec.Integer()
+	allocs := testing.AllocsPerRun(100, func() {
+		parsec.Run(p, "-12345")
+	})
+	// 2 (NewInput) + 6 (Advance: '-' + 5 digits) + 1 (EOF newError) = 9 max
+	if allocs > 9 {
+		t.Errorf("Integer allocs = %.0f, want ≤9", allocs)
+	}
+}
+
 func BenchmarkNatural(b *testing.B) {
 	p := parsec.Natural()
 	for b.Loop() {
