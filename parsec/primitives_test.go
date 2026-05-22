@@ -181,3 +181,24 @@ func TestRunFull_extraInput(t *testing.T) {
 		t.Error("expected error when input not fully consumed")
 	}
 }
+
+func BenchmarkChar(b *testing.B) {
+	p := parsec.Char('a')
+	for b.Loop() {
+		parsec.Run(p, "abc")
+	}
+}
+
+func BenchmarkSatisfy(b *testing.B) {
+	p := parsec.Satisfy(func(r rune) bool { return r >= 'a' && r <= 'z' })
+	for b.Loop() {
+		parsec.Run(p, "hello")
+	}
+}
+
+func BenchmarkString(b *testing.B) {
+	p := parsec.String("hello")
+	for b.Loop() {
+		parsec.Run(p, "hello world")
+	}
+}

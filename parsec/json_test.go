@@ -140,3 +140,20 @@ func TestJSON_invalid(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkJSON(b *testing.B) {
+	p := newJSONParser()
+	inputs := []string{
+		`null`,
+		`42`,
+		`"hello\nworld"`,
+		`[1, 2, 3]`,
+		`{"key": "value", "n": 42}`,
+		`{"a": [1, true, null], "b": {"c": 3.14}}`,
+	}
+	for b.Loop() {
+		for _, in := range inputs {
+			parsec.Run(p, in)
+		}
+	}
+}
