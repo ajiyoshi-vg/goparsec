@@ -327,21 +327,16 @@ func NotFollowedBy[T any](p Parser[T]) Parser[struct{}] {
 	}
 }
 
-// Label attaches a description to p, replacing its error message on failure.
+// Label attaches a name to p. On soft failure (no input consumed) the error
+// message is replaced with label. Hard failures (input consumed) pass through
+// unchanged so callers see the precise failure position.
 func Label[T any](p Parser[T], label string) Parser[T] {
-	return func(in input.Input) (T, input.Input, error) {
-		val, next, err := p(in)
-		if err == nil {
-			return val, next, nil
-		}
+	return MapError(p, func(in input.Input, err error) error {
 		if err == ErrNoMatch {
-			// Soft failure: no input consumed; replace with the label message.
-			return val, in, NewError(in, "expected "+label)
+			return NewError(in, label)
 		}
-		// Hard failure: p consumed input before failing; pass the error through
-		// so callers see the precise failure position, not the start of the label.
-		return val, in, err
-	}
+		return err
+	})
 }
 
 // Count parses exactly n occurrences of p, failing if fewer are found.
