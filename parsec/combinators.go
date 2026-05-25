@@ -336,7 +336,7 @@ func Label[T any](p Parser[T], label string) Parser[T] {
 		}
 		if err == ErrNoMatch {
 			// Soft failure: no input consumed; replace with the label message.
-			return val, in, NewError(in, "expected "+label)
+			return val, in, NewError(in, label)
 		}
 		// Hard failure: p consumed input before failing; pass the error through
 		// so callers see the precise failure position, not the start of the label.

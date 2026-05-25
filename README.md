@@ -117,8 +117,9 @@ Value(p, v)            // run p (discarding result), return v
 ### Error shaping
 
 ```go
-Label(p, "name")      // replace p's failure message with "expected name"
-NotFollowedBy(p)      // succeed only if p fails; consume nothing
+Label(p, "name")   // on soft failure (no input consumed), replace message with name; hard failures pass through
+Expect(p, "name")  // replace any failure's message with name; hard failures preserve position
+NotFollowedBy(p)   // succeed only if p fails; consume nothing
 ```
 
 ### Operators
