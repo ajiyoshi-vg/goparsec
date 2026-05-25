@@ -331,7 +331,7 @@ func TestLabel(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *parsec.ParseError, got %T", err)
 	}
-	if pe.Message != "expected digit" {
+	if pe.Message != "digit" {
 		t.Errorf("got message %q, want \"expected digit\"", pe.Message)
 	}
 	// Line/Col must be set (not zero)
@@ -349,7 +349,7 @@ func TestLabel_softFail(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
-	if pe.Message != "expected digit" {
+	if pe.Message != "digit" {
 		t.Errorf("message = %q, want \"expected digit\"", pe.Message)
 	}
 	if pe.Col != 1 {
