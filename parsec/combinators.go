@@ -76,7 +76,9 @@ func Choice[T any](ps ...Parser[T]) Parser[T] {
 }
 
 // furthestError returns whichever error occurred at the greater input position.
-// ErrNoMatch (soft failure with no position) always loses to a *ParseError.
+// ErrNoMatch (soft failure with no position) always loses to a Positioned error.
+// Errors that do not implement Positioned are treated as coming from an unknown
+// position and lose to any Positioned error; two such errors favour b.
 func furthestError(a, b error) error {
 	if a == nil || a == ErrNoMatch {
 		return b
@@ -84,12 +86,12 @@ func furthestError(a, b error) error {
 	if b == nil || b == ErrNoMatch {
 		return a
 	}
-	pa, ok1 := a.(*ParseError)
-	pb, ok2 := b.(*ParseError)
+	pa, ok1 := a.(Positioned)
+	pb, ok2 := b.(Positioned)
 	if !ok1 || !ok2 {
 		return b
 	}
-	if pb.Pos >= pa.Pos {
+	if pb.Pos() >= pa.Pos() {
 		return b
 	}
 	return a

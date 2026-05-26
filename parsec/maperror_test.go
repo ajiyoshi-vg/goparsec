@@ -63,13 +63,47 @@ func TestMapError_passThrough(t *testing.T) {
 	}
 }
 
+// customErr is a user-defined error type that implements Positioned.
+type customErr struct {
+	pos int
+	msg string
+}
+
+func (e *customErr) Error() string { return e.msg }
+func (e *customErr) Pos() int      { return e.pos }
+func (e *customErr) Line() int     { return 0 }
+func (e *customErr) Col() int      { return 0 }
+
+// TestPositioned_customErrorInChoice verifies that a user-defined error implementing
+// Positioned participates correctly in Choice's furthest-error tracking.
+func TestPositioned_customErrorInChoice(t *testing.T) {
+	// p1 fails with a custom Positioned error at pos 5
+	p1 := parsec.Parser[int](func(in input.Input) (int, input.Input, error) {
+		return 0, in, &customErr{pos: 5, msg: "custom at 5"}
+	})
+	// p2 fails with a custom Positioned error at pos 2
+	p2 := parsec.Parser[int](func(in input.Input) (int, input.Input, error) {
+		return 0, in, &customErr{pos: 2, msg: "custom at 2"}
+	})
+
+	_, err := parsec.RunString(parsec.Choice(p1, p2), "anything")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	// p1 reached furthest (offset 5), so its error should win
+	if err.Error() != "custom at 5" {
+		t.Errorf("got %q, want \"custom at 5\"", err.Error())
+	}
+}
+
 // TestMapError_implementsExpect shows that Expect-like behaviour can be
 // implemented via MapError, preserving the hard failure position.
+// NewErrorAt accepts any Positioned — no *ParseError type assertion needed.
 func TestMapError_implementsExpect(t *testing.T) {
 	expect := func(p parsec.Parser[int], label string) parsec.Parser[int] {
 		return parsec.MapError(p, func(in input.Input, err error) error {
-			if pe, ok := err.(*parsec.ParseError); ok {
-				return &parsec.ParseError{Pos: pe.Pos, Line: pe.Line, Col: pe.Col, Message: label}
+			if p, ok := err.(parsec.Positioned); ok {
+				return parsec.NewErrorAt(p, label)
 			}
 			return parsec.NewError(in, label)
 		})

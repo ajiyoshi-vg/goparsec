@@ -220,8 +220,8 @@ func TestCustomParser_politeErrors(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T: %v", err, err)
 	}
-	if pe.Col != 2 {
-		t.Errorf("error col = %d, want 2 (position of failed '2')", pe.Col)
+	if pe.Col() != 2 {
+		t.Errorf("error col = %d, want 2 (position of failed '2')", pe.Col())
 	}
 }
 
@@ -260,8 +260,8 @@ func TestNewErrorf(t *testing.T) {
 	if pe.Message != `expected digit, got 'a'` {
 		t.Errorf("message = %q, want %q", pe.Message, `expected digit, got 'a'`)
 	}
-	if pe.Col != 1 {
-		t.Errorf("col = %d, want 1", pe.Col)
+	if pe.Col() != 1 {
+		t.Errorf("col = %d, want 1", pe.Col())
 	}
 }
 

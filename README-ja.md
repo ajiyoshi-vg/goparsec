@@ -186,11 +186,12 @@ got, err := parsec.Run(p, input.NewReaderAt(f))
 
 ```go
 type ParseError struct {
-    Pos     int    // ルーンオフセット（最遠エラーの比較に使用）
-    Line    int    // 1 始まり
-    Col     int    // 1 始まり
-    Message string
+    Message string // エラーメッセージ。位置情報は unexported フィールドで、メソッド経由でアクセスする
 }
+
+func (e *ParseError) Pos() int  // ルーンオフセット（最遠エラーの比較に使用）
+func (e *ParseError) Line() int // 1 始まりの行番号
+func (e *ParseError) Col() int  // 1 始まりの列番号
 ```
 
 `Choice` は各代替案のうち、入力の最も深い位置に到達したものからエラーを報告します。
@@ -211,6 +212,21 @@ func NewError(in input.Input, msg string) error
 
 // NewErrorf は NewError の fmt.Sprintf 版です。
 func NewErrorf(in input.Input, format string, args ...any) error
+
+// NewErrorAt は p の位置を保ちつつ msg を付けた *ParseError を返します。
+// MapError のコールバック内でメッセージだけ差し替えるときに使います。
+// *ParseError への型アサートなしに任意の Positioned で動作します。
+func NewErrorAt(p Positioned, msg string) error
+
+// Positioned はソース位置を持つエラーが実装するインターフェースです。
+// Choice はこのインターフェースを使って各代替案のエラーを比較します。
+// ユーザ定義エラー型がこれを実装すると、Choice の最遠エラー追跡に参加でき、
+// NewErrorAt でも使えます。
+type Positioned interface {
+    Pos() int  // 入力先頭からのルーンオフセット
+    Line() int // 1 始まりの行番号
+    Col() int  // 1 始まりの列番号
+}
 ```
 
 例 — リテラル `42` にマッチするパーサ：

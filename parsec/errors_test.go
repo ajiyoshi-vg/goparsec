@@ -14,8 +14,8 @@ func TestParseError_lineCol(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
-	if pe.Line != 1 || pe.Col != 1 {
-		t.Errorf("expected line 1, col 1; got line %d, col %d", pe.Line, pe.Col)
+	if pe.Line() != 1 || pe.Col() != 1 {
+		t.Errorf("expected line 1, col 1; got line %d, col %d", pe.Line(), pe.Col())
 	}
 
 	// after "hello\n", next position is line 2, col 1
@@ -25,8 +25,8 @@ func TestParseError_lineCol(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
-	if pe.Line != 2 || pe.Col != 1 {
-		t.Errorf("expected line 2, col 1; got line %d, col %d", pe.Line, pe.Col)
+	if pe.Line() != 2 || pe.Col() != 1 {
+		t.Errorf("expected line 2, col 1; got line %d, col %d", pe.Line(), pe.Col())
 	}
 
 	// error message includes line:col
