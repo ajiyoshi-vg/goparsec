@@ -7,6 +7,14 @@ import (
 	"github.com/ajiyoshi-vg/goparsec/input"
 )
 
+// Positioned is implemented by errors that carry a rune-offset position.
+// Choice uses Offset() to pick the furthest-reaching error among alternatives.
+// User-defined error types may implement this interface to participate in
+// Choice's furthest-error tracking.
+type Positioned interface {
+	Offset() int
+}
+
 // ParseError records the position and message of a parse failure.
 type ParseError struct {
 	Pos     int // rune offset, used for furthest-error comparison
@@ -18,6 +26,9 @@ type ParseError struct {
 func (e *ParseError) Error() string {
 	return fmt.Sprintf("parse error at line %d, col %d: %s", e.Line, e.Col, e.Message)
 }
+
+// Offset implements Positioned.
+func (e *ParseError) Offset() int { return e.Pos }
 
 // ErrNoMatch is the zero-allocation sentinel for a soft failure: the parser did not
 // match at this position and consumed no input. The caller (Choice, Label) is

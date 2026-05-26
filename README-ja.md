@@ -207,6 +207,13 @@ func NewError(in input.Input, msg string) error
 
 // NewErrorf は NewError の fmt.Sprintf 版です。
 func NewErrorf(in input.Input, format string, args ...any) error
+
+// Positioned はルーンオフセット位置を持つエラーが実装するインターフェースです。
+// Choice はこのインターフェースを使って各代替案のエラーを比較します。
+// ユーザ定義エラー型がこれを実装すると、Choice の最遠エラー追跡に参加できます。
+type Positioned interface {
+    Offset() int
+}
 ```
 
 例 — リテラル `42` にマッチするパーサ：

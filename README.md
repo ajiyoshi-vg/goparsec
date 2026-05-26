@@ -209,6 +209,14 @@ func NewError(in input.Input, msg string) error
 
 // NewErrorf is like NewError but formats the message via fmt.Sprintf.
 func NewErrorf(in input.Input, format string, args ...any) error
+
+// Positioned is implemented by errors that carry a rune-offset position.
+// Choice uses Offset() to rank errors from different alternatives.
+// Implement this on a user-defined error type to participate in
+// Choice's furthest-error tracking.
+type Positioned interface {
+    Offset() int
+}
 ```
 
 Example — a parser that matches the literal `42`:
