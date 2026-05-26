@@ -183,11 +183,12 @@ got, err := parsec.Run(p, input.NewReaderAt(f))
 
 ```go
 type ParseError struct {
-    Pos     int    // rune offset (used for furthest-error comparison)
-    Line    int    // 1-based
-    Col     int    // 1-based
-    Message string
+    Message string // the error message; other fields are unexported, accessed via methods
 }
+
+func (e *ParseError) Pos() int  // rune offset (used for furthest-error comparison)
+func (e *ParseError) Line() int // 1-based line number
+func (e *ParseError) Col() int  // 1-based column number
 ```
 
 `Choice` automatically picks the error from whichever alternative reached the
@@ -210,12 +211,19 @@ func NewError(in input.Input, msg string) error
 // NewErrorf is like NewError but formats the message via fmt.Sprintf.
 func NewErrorf(in input.Input, format string, args ...any) error
 
-// Positioned is implemented by errors that carry a rune-offset position.
-// Choice uses Offset() to rank errors from different alternatives.
+// NewErrorAt creates a *ParseError at p's position with the given message.
+// Use inside MapError callbacks to replace an error message while preserving
+// position — works with any Positioned, not just *ParseError.
+func NewErrorAt(p Positioned, msg string) error
+
+// Positioned is implemented by errors that carry a source position.
+// Choice uses Pos() to rank errors from different alternatives.
 // Implement this on a user-defined error type to participate in
-// Choice's furthest-error tracking.
+// Choice's furthest-error tracking and to work with NewErrorAt.
 type Positioned interface {
-    Offset() int
+    Pos() int  // rune offset from the start of input
+    Line() int // 1-based line number
+    Col() int  // 1-based column number
 }
 ```
 

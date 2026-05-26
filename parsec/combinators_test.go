@@ -241,8 +241,8 @@ func TestChoice_furthestError(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *parsec.ParseError, got %T", err)
 	}
-	if pe.Pos != 3 {
-		t.Errorf("want error at pos 3 (furthest reached), got pos %d", pe.Pos)
+	if pe.Pos() != 3 {
+		t.Errorf("want error at pos 3 (furthest reached), got pos %d", pe.Pos())
 	}
 }
 
@@ -335,8 +335,8 @@ func TestLabel(t *testing.T) {
 		t.Errorf("got message %q, want \"expected digit\"", pe.Message)
 	}
 	// Line/Col must be set (not zero)
-	if pe.Line == 0 || pe.Col == 0 {
-		t.Errorf("Label: Line=%d Col=%d, want non-zero", pe.Line, pe.Col)
+	if pe.Line() == 0 || pe.Col() == 0 {
+		t.Errorf("Label: Line=%d Col=%d, want non-zero", pe.Line(), pe.Col())
 	}
 }
 
@@ -352,8 +352,8 @@ func TestLabel_softFail(t *testing.T) {
 	if pe.Message != "digit" {
 		t.Errorf("message = %q, want \"expected digit\"", pe.Message)
 	}
-	if pe.Col != 1 {
-		t.Errorf("col = %d, want 1", pe.Col)
+	if pe.Col() != 1 {
+		t.Errorf("col = %d, want 1", pe.Col())
 	}
 }
 
@@ -367,8 +367,8 @@ func TestLabel_hardFail(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected *ParseError, got %T", err)
 	}
-	if pe.Col != 4 {
-		t.Errorf("col = %d, want 4 (hard failure must not be reset to col 1)", pe.Col)
+	if pe.Col() != 4 {
+		t.Errorf("col = %d, want 4 (hard failure must not be reset to col 1)", pe.Col())
 	}
 }
 

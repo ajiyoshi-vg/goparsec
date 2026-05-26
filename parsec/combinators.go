@@ -91,7 +91,7 @@ func furthestError(a, b error) error {
 	if !ok1 || !ok2 {
 		return b
 	}
-	if pb.Offset() >= pa.Offset() {
+	if pb.Pos() >= pa.Pos() {
 		return b
 	}
 	return a
