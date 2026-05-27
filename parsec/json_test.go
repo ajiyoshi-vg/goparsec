@@ -17,16 +17,21 @@ import (
 	"github.com/ajiyoshi-vg/goparsec/parsec"
 )
 
+type jsonPair struct {
+	key string
+	val any
+}
+
 // Conversion functions: parsed text → Go values
 func jsonNull(_ string) any   { return nil }
 func jsonTrue(_ string) any   { return true }
 func jsonFalse(_ string) any  { return false }
 func jsonString(s string) any { return s }
 func jsonArray(vs []any) any  { return vs }
-func jsonObject(pairs [][2]any) any {
+func jsonObject(pairs []jsonPair) any {
 	m := make(map[string]any, len(pairs))
 	for _, p := range pairs {
-		m[p[0].(string)] = p[1]
+		m[p.key] = p.val
 	}
 	return m
 }
@@ -61,8 +66,8 @@ func newJSONParser() parsec.Parser[any] {
 
 	// object: '{' ws (key ':' value (',' key ':' value)*)? ws '}'
 	key  := parsec.Then(w, parsec.JSONString())
-	pair := parsec.Bind(key, func(k string) parsec.Parser[[2]any] {
-		return parsec.Map(parsec.Then(colon, lazy), func(v any) [2]any { return [2]any{k, v} })
+	pair := parsec.Map2(key, parsec.Then(colon, lazy), func(k string, v any) jsonPair {
+		return jsonPair{k, v}
 	})
 	jobject := parsec.Map(
 		parsec.Between(tok('{'), parsec.SepBy(pair, comma), tok('}')),
